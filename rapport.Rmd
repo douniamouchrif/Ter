@@ -60,6 +60,15 @@ rivers_lines <- rivers[st_geometry_type(rivers) == "LINESTRING" | st_geometry_ty
 rivers_lines <- st_cast(rivers_lines, "MULTILINESTRING")
 ```
 
+```{r}
+#couleurs cartes
+#couleurs cartes
+my_col_3 <- c("brown", "orange", "yellow")
+my_col_4 <- c("#F15025", "#F1D725", "#682E0B","#8FD175")
+my_col_5 <- c("#F15025", "#F1D725", "#682E0B", "#75b8d1","#8FD175")
+my_col_7 <- c("#F15025", "#F1D525", "#F4D2E2", "#C70039", "#682E0B", "#8FD175", "#75b8d1")
+```
+
 # Contextualisation {.tabset}
 
 Au sein de ce projet TER d'une durée de Janvier à Mai 2024, nous avons réalisé différentes analyses statistiques concernant l'enquête Bourciez. Cette enquête a été menée par Edouard Bourciez (Professeur à l’Université de Bordeaux) en 1894-1895 et suivie par les Académies de Bordeaux et Toulouse. 
@@ -182,8 +191,7 @@ data3 <- data.frame(lng, lat, mot_hommes = mot_hommes[i]) %>%
   mutate(catégorie = 3)
 
 combined_data <- rbind(data1, data2, data3)
-colors <- c("brown", "orange", "yellow")
-pal <- colorFactor(palette = colors, domain = combined_data$catégorie)
+pal <- colorFactor(palette = my_col_3, domain = combined_data$catégorie)
 type <- c("é", "e", "i")
 
 m <- leaflet(data = combined_data) %>% 
@@ -267,8 +275,7 @@ data3 <- data.frame(lng, lat, mot_fils = mot_fils[g]) %>%
   mutate(catégorie = 3)
 
 combined_data <- rbind(data1, data2, data3)
-colors <- c("brown", "orange", "yellow")
-pal <- colorFactor(palette = colors, domain = combined_data$catégorie)
+pal <- colorFactor(palette = my_col_3, domain = combined_data$catégorie)
 type <- c("h", "f", "g")
 
 m <- leaflet(data = combined_data) %>% 
@@ -352,8 +359,7 @@ data3 <- data.frame(lng, lat, mot_donnez = mot_donnez[da]) %>%
   mutate(catégorie = 3)
 
 combined_data <- rbind(data1, data2, data3)
-colors <- c("brown", "orange", "yellow")
-pal <- colorFactor(palette = colors, domain = combined_data$catégorie)
+pal <- colorFactor(palette = my_col_3, domain = combined_data$catégorie)
 type <- c("do", "ba", "da")
 
 m <- leaflet(data = combined_data) %>% 
@@ -435,8 +441,7 @@ data3 <- data.frame(lng, lat, mot_egales = mot_egales[as]) %>%
   mutate(catégorie = 3)
 
 combined_data <- rbind(data1, data2, data3)
-colors <- c("brown", "orange", "yellow")
-pal <- colorFactor(palette = colors, domain = combined_data$catégorie)
+pal <- colorFactor(palette = my_col_3, domain = combined_data$catégorie)
 type <- c("os", "es", "as")
 
 m <- leaflet(data = combined_data) %>% 
@@ -683,8 +688,7 @@ data3 <- data.frame(lng, lat, sans_accent = sans_accent[ze]) %>%
   mutate(catégorie = 3)
 
 combined_data <- rbind(data1, data2, data3)
-colors <- c("brown", "orange", "yellow")
-pal <- colorFactor(palette = colors, domain = combined_data$catégorie)
+pal <- colorFactor(palette = my_col_3, domain = combined_data$catégorie)
 type <- c("ye", "ge_je", "ze")
 
 m <- leaflet(data = combined_data) %>% 
@@ -1064,13 +1068,6 @@ Nous souhaitons obtenir des clusters en utilisant la méthode KNN (Méthode des 
 Une fois que les données ont été analysées pour comprendre les relations entre les variables à l'aide de l'ACM, nous pouvons utiliser l'algorithme kNN pour effectuer la classification. L'algorithme kNN est une méthode de classification supervisée utilisée pour attribuer une classe à un nouvel échantillon en se basant sur les classes des échantillons voisins dans l'espace des caractéristiques et donc sur les distances entre chaque donnée obtenue grâce à l'ACM.
 
 Nous allons procéder à créer des clusters à l'aide de la méthode KNN en prenant en compte les accents et en le comparant avec la partition lorsque nous ne prenons pas en compte les accents dans l'écriture de chaque mot.
-
-```{r}
-#couleurs cartes
-my_col_4 <- c("#F15025", "#F1D525", "#C70039", "#682E0B")
-my_col_5 <- c("#F15025", "#F1D525", "#F4D2E2", "#C70039", "#682E0B")
-my_col_7 <- c("#F15025", "#F1D525", "#F4D2E2", "#C70039", "#682E0B", "#8FD175", "#75b8d1")
-```
 
 ## Avec les accents {.tabset}
 
@@ -1794,10 +1791,6 @@ df_all_mots_BIG <- df_all[, c(6:106)]
 g_data_2 <- data.frame(g_data)
 colonnes_a_convertir <- names(g_data_2)[6:ncol(g_data_2)]
 g_data_2[, colonnes_a_convertir] <- lapply(g_data_2[, colonnes_a_convertir], function(x) stri_trans_general(x, "Latin-ASCII"))
-
-#couleurs cartes
-my_col_4 <- c("#F15025", "#F1D725", "#682E0B","#8FD175")
-my_col_5 <- c("#F15025", "#F1D725", "#682E0B", "#75b8d1","#8FD175")
 ```
 
 #### VERSION AVEC LES ACCENTS {.tabset}
