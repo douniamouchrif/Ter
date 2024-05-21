@@ -1317,7 +1317,7 @@ verifier_presence_colonne <- function(colonne_donnees) {
 
 ```{r}
 cluster_5_data <- subset(cluster_5_data, select = -c(département, canton, commune))
-resultats <- lapply(colnames(cluster_5_data_act), function(col) {
+resultats <- lapply(colnames(cluster_5_data), function(col) {
   verifier_presence_colonne(cluster_5_data[[col]])
 })
 
