@@ -152,6 +152,15 @@ ui <- fluidPage(
              plotOutput("dist_moy_plot", height = "500px", width = "700px"),
              p("La fonction obtenue avec régression multiple, semble mieux s'ajuster à notre courbe de diffusion linguistique."),
              p("Pour conclure, cette appoche permet de mettre en lumière le fait que la distance géographique joue un rôle assez important dans la répartition des dialectes.")
+    ), 
+    tabPanel("Conclusion",
+             h2("Conclusion"),
+             p("Nous avons pu constater que les statistiques offrent un large éventail d'applications pour les sciences humaines, notamment pour notre projet sur l'étude statistique d'une enquête linguistique. En effet, un statisticien peut apporter au linguiste une aide concernant cette étude grâce à la dialectométrie afin de pouvoir en tirer des conlusions."),
+             p("En utilisant des outils statistiques relativement simples pour un statisticien, il est possible d'analyser et de visualiser notamment des variations lexicales et phonologiques, d'expliquer du clustering à l'aide de ces variations regroupées dans des matrices, ou encore visualiser des distances linguistiques et géographiques à l'aide de méthodes de classification ascendante hiérarchique."),
+             p("Cette approche permet non seulement de visualiser les différences linguistiques au sein d'un territoire choisi (ici, Nouvelle-Aquitaine/Occitanie), mais aussi de comprendre l'évolution des langues concernées (ici, langues romanes/basque)."),
+             p("De plus, nous avons rassemblé nos résultats statistiques dans une application Shiny interactive qui permet d'accéder à ces différentes analyses de manière efficace. Cette application permettrait aux linguistes de manipuler les données et de visualiser instantanément les variations étudiées dans cette enquête."),
+             p("Pour conclure, l'intégration des statistiques et des outils interactifs dans les sciences humaines représente une combinaison efficace. Cela nous a d'autant plus enrichi quant à l'application directe de nos années d'études statistiques sur un cas concret, ici l'étude linguistique."),
+             
     )
   )
 )
