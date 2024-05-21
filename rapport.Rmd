@@ -54,7 +54,6 @@ local({
 
 ```{r, include=FALSE}
 g_data <- read.csv("bdd_grande.csv", header = TRUE, sep = ";")
-mots <- read.csv("bdd_grande.csv", header = TRUE, sep = ";")
 departements <- st_read("departements.geojson")
 rivers <- st_read("rivers.geojson")
 rivers_lines <- rivers[st_geometry_type(rivers) == "LINESTRING" | st_geometry_type(rivers) == "MULTILINESTRING",]
@@ -1046,7 +1045,7 @@ m <- leaflet(data = combined_data) %>%
 m
 ```
 
-On constate que pour chacun de ces mots qui partagent aujourd'hui la même première lettre "v", leur répartition selon la première lettre de leur consonne en attaque est également homogène. En effet, la lettre "v" était prédominante dans le nord de la région, tandis que la lettre "b" était plus fréquemment utilisée dans le sud. Cette constatation met en lumière une cohérence avec les pratiques orthographiques actuelles.
+On constate que pour chacun de ces g_data qui partagent aujourd'hui la même première lettre "v", leur répartition selon la première lettre de leur consonne en attaque est également homogène. En effet, la lettre "v" était prédominante dans le nord de la région, tandis que la lettre "b" était plus fréquemment utilisée dans le sud. Cette constatation met en lumière une cohérence avec les pratiques orthographiques actuelles.
 
 En examinant de plus près ces deux groupes de clusters présentant des prononciations distinctes, nous observons :
 
@@ -1058,9 +1057,636 @@ En examinant de plus près ces deux groupes de clusters présentant des prononci
 
 Par la suite, nous nous sommes intéressées à la question suivante : existe-t-il une structure de cohérence des données, sans se placer au niveau du plus petit dénominateur commun (c'est à dire au niveau d'une seule caractéristique) ? Et c'est ici que les techniques de clusturing entrent en jeu. En prenant le texte dans son ensemble, et non mot à mot, nous allons pouvoir trouver différentes structures de cohérance sur lesquelles les linguistes pourront se baser.
 
-# KNN 
+# KNN {.tabset}
 
-**[PARTIE KNN DE KARINA ???]**
+Nous souhaitons obtenir des clusters en utilisant la méthode KNN (Méthode des K plus proches voisins) sur l'ensemble des données disponibles. Comme les variables que nous souhaitons utiliser pour le KNN sont toutes des variables qualitatives (elles stockent différentes traductions pour chaque mot), nous devrons tout d'abord utiliser l'ACM (Analyse des Correspondances Multiples). L'ACM est une méthode statistique conçue spécifiquement pour analyser des données catégorielles ou qualitatives. Elle permet d'explorer les relations entre les modalités de différentes variables catégorielles dans un ensemble de données, et de déterminer des distances de similarité ou de dissimilarité entre les modalités. Dans notre cas, l'ACM permet d'analyser la similarité et la dissimilarité entre chaque mot disponible dans chaque colonne et d'observer si les mots se rassemblent, tout en prenant en compte toutes les variables disponibles pour chaque donnée.
+
+Une fois que les données ont été analysées pour comprendre les relations entre les variables à l'aide de l'ACM, nous pouvons utiliser l'algorithme kNN pour effectuer la classification. L'algorithme kNN est une méthode de classification supervisée utilisée pour attribuer une classe à un nouvel échantillon en se basant sur les classes des échantillons voisins dans l'espace des caractéristiques et donc sur les distances entre chaque donnée obtenue grâce à l'ACM.
+
+Nous allons procéder à créer des clusters à l'aide de la méthode KNN en prenant en compte les accents et en le comparant avec la partition lorsque nous ne prenons pas en compte les accents dans l'écriture de chaque mot.
+
+```{r}
+#couleurs cartes
+my_col_4 <- c("#F15025", "#F1D525", "#C70039", "#682E0B")
+my_col_5 <- c("#F15025", "#F1D525", "#F4D2E2", "#C70039", "#682E0B")
+my_col_7 <- c("#F15025", "#F1D525", "#F4D2E2", "#C70039", "#682E0B", "#8FD175", "#75b8d1")
+```
+
+## Avec les accents {.tabset}
+
+Nous allons créer des clusters avec la méthode KNN en prenant en compte les accès dans l’écriture des mots. Dans un première temps nous allons procéder par l'ACM. 
+
+```{r}
+if (!file.exists("acm_with_act.RData")) {
+  variables_qualitatives <- subset(g_data, select = -c(département, commune, canton, x, y))
+  acm_with_act <- MCA(variables_qualitatives, graph = FALSE)
+  save(acm_with_act, file = "acm_with_act.RData")
+}
+```
+
+Ensuite pour décider du nombre de k clusters optimal pour la méthode KNN, nous pouvons regarder le graphique associé à la méthode du coude.
+
+La méthode du "coude" consiste à trouver le nombre optimal de clusters en traçant un graphique qui représente la variance intra-cluster en fonction du nombre de clusters. On observe ensuite le point où l'ajout de clusters supplémentaires ne diminue pas significativement la variance intra-cluster, ce qui est le "coude" du graphique. Ce point indique le nombre optimal de clusters à utiliser pour regrouper les données de manière efficace.
+
+```{r}
+load("acm_with_act.RData")
+pc_coords <- as.data.frame(acm_with_act$ind$coord)
+
+elbow_with_act <- fviz_nbclust(pc_coords, kmeans, method = "wss")
+plot(elbow_with_act)
+```
+
+Sur ce graphique, nous constatons que le nombre optimal de clusters est 5, 7 et 9. Nous allons nous focaliser uniquement sur les méthodes avec 5 et 7 clusters, car 9 semble être  nombre excessifs de clusters pour notre analyse. De plus, nous allons également effectuer une analyse avec 4 clusters afin de pouvoir comparer par la suite la méthode KNN avec 4 clusters à celle de CAH (Classification ascendante hiérarchique) que nous allons effectuer ultérieurement dans la partie suivante.
+
+### 4 Clusters
+
+```{r}
+k = 4
+clusters <- kmeans(acm_with_act$ind$coord, centers = k)
+g_data$cluster <- clusters$cluster
+
+palette_couleurs <- function(cluster) {
+  couleurs <- my_col_4
+  return(couleurs[cluster])
+}
+
+clusters_uniques_triés <- sort(unique(g_data$cluster))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addCircleMarkers(data = g_data, ~x, ~y, color = ~palette_couleurs(cluster), 
+                   radius = 2, opacity = 1, popup = paste("Commune:", g_data$commune, "<br/>",
+                                                          "Canton:", g_data$canton, "<br/>",
+                                                          "Département:", g_data$département, "<br/>",
+                                                          "Cluster:", g_data$cluster)) %>%
+  addLegend(position = "bottomright", colors = my_col_4,
+            labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
+  addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
+  addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+
+```
+
+Taille de chaque cluster :
+
+```{r}
+table(clusters$cluster)
+```
+
+Les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
+
+```{r}
+resultats <- data.frame(Cluster = numeric(),
+                        Mot_1 = character(),
+                        Nom_Colonne_Mot_1 = character(),
+                        Occurrences_Mot_1 = numeric(),
+                        Mot_2 = character(),
+                        Nom_Colonne_Mot_2 = character(),
+                        Occurrences_Mot_2 = numeric(),
+                        stringsAsFactors = FALSE,
+                        row.names = NULL)
+colonnes <- setdiff(names(g_data), c("département", "commune", "canton", "x", "y"))
+
+for (colonne in colonnes) {
+  for (cluster in unique(g_data$cluster)) {
+    subset_data <- g_data[g_data$cluster == cluster, ]
+    modalites <- table(subset_data[[colonne]])
+    
+    if (length(modalites) >= 2) {
+      sorted_modalites <- sort(modalites, decreasing = TRUE)
+      top_mot_1 <- names(sorted_modalites)[1]
+      top_occurrences_1 <- sorted_modalites[1]
+      top_mot_2 <- names(sorted_modalites)[2]
+      top_occurrences_2 <- sorted_modalites[2]
+
+      resultats <- rbind(resultats, data.frame(Cluster = cluster,
+                                               Mot_1 = top_mot_1,
+                                               Nom_Colonne_Mot_1 = colonne,
+                                               Occurrences_Mot_1 = top_occurrences_1,
+                                               Mot_2 = top_mot_2,
+                                               Nom_Colonne_Mot_2 = colonne,
+                                               Occurrences_Mot_2 = top_occurrences_2,
+                                               row.names = NULL))
+    }
+  }
+}
+resultats
+```
+
+### 5 Clusters
+
+```{r}
+k = 5
+clusters_act_5 <- kmeans(acm_with_act$ind$coord, centers = k)
+g_data$cluster <- clusters_act_5$cluster
+
+palette_couleurs <- function(cluster) {
+  couleurs <- my_col_5
+  return(couleurs[cluster])
+}
+
+clusters_vecteur <- clusters_act_5$cluster
+clusters_uniques_triés <- sort(unique(g_data$cluster))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addCircleMarkers(data = g_data, ~x, ~y, color = ~palette_couleurs(clusters_vecteur), 
+                   radius = 2, opacity = 1, popup = paste("Commune:", g_data$commune, "<br/>",
+                                                          "Canton:", g_data$canton, "<br/>",
+                                                          "Département:", g_data$département, "<br/>",
+                                                          "Cluster:", g_data$cluster)) %>%
+  addLegend(position = "bottomright", colors = my_col_5,
+            labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
+  addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
+  addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+
+```
+
+Taille de chaque cluster :
+
+```{r}
+table(clusters_act_5$cluster)
+```
+
+Nous constatons que le cluster numéro 5 est formé de seulement 4 communes. Nous allons analyser dans la prochaine partie la formation de chaque cluster afin de comprendre pourquoi ce cluster contient un nombre très restreint de communes.
+
+Les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
+
+```{r}
+resultats <- data.frame(Cluster = numeric(),
+                        Mot_1 = character(),
+                        Nom_Colonne_Mot_1 = character(),
+                        Occurrences_Mot_1 = numeric(),
+                        Mot_2 = character(),
+                        Nom_Colonne_Mot_2 = character(),
+                        Occurrences_Mot_2 = numeric(),
+                        stringsAsFactors = FALSE,
+                        row.names = NULL)
+colonnes <- setdiff(names(g_data), c("département", "commune", "canton", "x", "y"))
+
+for (colonne in colonnes) {
+  for (cluster in unique(g_data$cluster)) {
+    subset_data <- g_data[g_data$cluster == cluster, ]
+    modalites <- table(subset_data[[colonne]])
+    
+    if (length(modalites) >= 2) {
+      sorted_modalites <- sort(modalites, decreasing = TRUE)
+      top_mot_1 <- names(sorted_modalites)[1]
+      top_occurrences_1 <- sorted_modalites[1]
+      top_mot_2 <- names(sorted_modalites)[2]
+      top_occurrences_2 <- sorted_modalites[2]
+
+      resultats <- rbind(resultats, data.frame(Cluster = cluster,
+                                               Mot_1 = top_mot_1,
+                                               Nom_Colonne_Mot_1 = colonne,
+                                               Occurrences_Mot_1 = top_occurrences_1,
+                                               Mot_2 = top_mot_2,
+                                               Nom_Colonne_Mot_2 = colonne,
+                                               Occurrences_Mot_2 = top_occurrences_2,
+                                               row.names = NULL))
+    }
+  }
+}
+
+resultats
+```
+
+### 7 Clusters
+
+```{r}
+k = 7
+clusters <- kmeans(acm_with_act$ind$coord, centers = k)
+g_data$cluster <- clusters$cluster
+
+palette_couleurs <- function(cluster) {
+  couleurs <- my_col_7
+  return(couleurs[cluster])
+}
+
+clusters_uniques_triés <- sort(unique(g_data$cluster))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addCircleMarkers(data = g_data, ~x, ~y, color = ~palette_couleurs(cluster), 
+                   radius = 2, opacity = 1, popup = paste("Commune:", g_data$commune, "<br/>",
+                                                          "Canton:", g_data$canton, "<br/>",
+                                                          "Département:", g_data$département, "<br/>",
+                                                          "Cluster:", g_data$cluster)) %>%
+  addLegend(position = "bottomright", colors = my_col_7,
+            labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
+  addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
+  addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+```
+
+Taille de chaque cluster :
+
+```{r}
+table(clusters$cluster)
+```
+
+Nous nous intéressons à savoir pourquoi le cluster numéro 3 et le cluster numéro 5 contiennent respectivement 3 et une seule commune.
+
+Nous commençons par le cluster 3. Nous avons regroupé les données de ce cluster dans un dataframe.
+
+```{r}
+cluster_3_data <- subset(g_data,  cluster == 3, select = -c(cluster))
+commune <- cluster_3_data$commune
+cluster_3_data
+```
+
+À première vue, il semble que les traductions des mots pour ces trois communes soient très similaires. Cette observation suggère que les habitants de ces régions partagent potentiellement un vocabulaire commun ou des particularités linguistiques similaires.
+
+Dans la partie suivante de notre analyse, nous allons plonger plus en profondeur pour comprendre pourquoi ces clusters ont été formés. Nous allons examiner les caractéristiques linguistiques spécifiques, (telles que les préfixes, les suffixes, etc), qui peuvent avoir contribué à la formation de ces groupes de communes.
+
+Nous observerons que le cluster numéro 2 contient qu'un seul élément et nous souhaitons étudier pourquoi cette commune se retrouve seule. Pour ce faire, nous allons voir si les traductions de chaque mot pour cette commune sont uniques par rapport à toutes les autres communes disponibles dans notre étude.
+
+Nous allons maintenant nous intéresser à la raison pour laquelle le cluster 5 ne contient qu'une seule commune. Nous pourrions examiner si cette commune possède des traductions qui ne se retrouvent pas dans les autres communes, ce qui pourrait expliquer pourquoi elle est séparée des autres dans un cluster distinct.
+
+Les données pour la commune Moulis-en-Médoc sans les accens :
+
+```{r}
+cluster_5_data <- subset(g_data,  cluster == 5, select = -c(cluster))
+cluster_5_data
+```
+
+On va vérifier si les traductions sont uniques par rapport à toutes les autres traductions disponibles pour chaque mot dans toutes les autres communes.
+
+```{r}
+verifier_presence_colonne <- function(colonne_donnees) {
+  colonne_donnees[is.na(colonne_donnees)] <- ""
+  presence <- colonne_donnees %in% mots[[colonne_donnees]]
+  return(presence)
+}
+```
+
+```{r}
+cluster_5_data <- subset(cluster_5_data, select = -c(département, canton, commune))
+resultats <- lapply(colnames(cluster_5_data_act), function(col) {
+  verifier_presence_colonne(cluster_5_data[[col]])
+})
+
+res_5 <- as.data.frame(resultats)
+colnames(res_5) <- colnames(cluster_5_data)
+res_5
+```
+
+Le pourcentage de valeurs traductions uniques pour la commune Moulis-en-Médoc en ne prenant pas compte les accents est de :
+
+```{r}
+nb_false <- sum(!unlist(res_5))
+cat((nb_false / length(cluster_5_data)) * 100, "%\n")
+```
+
+Nous constatons donc que cette commune propose une traduction assez "unique" pour chaque mot, qui ne se retrouve pas dans les autres communes, d'où sa séparation dans un seul cluster. On remarque que lorsque nous divisons les données en un nombre plus important de clusters, les différences deviennent alors plus perceptibles.
+
+Ainsi, les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
+
+```{r}
+resultats <- data.frame(Cluster = numeric(),
+                        Mot_1 = character(),
+                        Nom_Colonne_Mot_1 = character(),
+                        Occurrences_Mot_1 = numeric(),
+                        Mot_2 = character(),
+                        Nom_Colonne_Mot_2 = character(),
+                        Occurrences_Mot_2 = numeric(),
+                        stringsAsFactors = FALSE,
+                        row.names = NULL)
+colonnes <- setdiff(names(g_data), c("département", "commune", "canton", "x", "y"))
+
+for (colonne in colonnes) {
+  for (cluster in unique(g_data$cluster)) {
+    subset_data <- g_data[g_data$cluster == cluster, ]
+    modalites <- table(subset_data[[colonne]])
+    
+    if (length(modalites) >= 2) {
+      sorted_modalites <- sort(modalites, decreasing = TRUE)
+      top_mot_1 <- names(sorted_modalites)[1]
+      top_occurrences_1 <- sorted_modalites[1]
+      top_mot_2 <- names(sorted_modalites)[2]
+      top_occurrences_2 <- sorted_modalites[2]
+
+      resultats <- rbind(resultats, data.frame(Cluster = cluster,
+                                               Mot_1 = top_mot_1,
+                                               Nom_Colonne_Mot_1 = colonne,
+                                               Occurrences_Mot_1 = top_occurrences_1,
+                                               Mot_2 = top_mot_2,
+                                               Nom_Colonne_Mot_2 = colonne,
+                                               Occurrences_Mot_2 = top_occurrences_2,
+                                               row.names = NULL))
+    }
+  }
+}
+resultats
+```
+
+## Sans les accents {.tabset}
+
+Nous allons modifier tous les mots en enlevant les accents pour observer si nous retrouvons des changements importants au niveau des clusters lorsque nous ne prenons pas en compte les accent lorsque de la KNN avec à nouveau 4, 5 et 7 clusters.
+
+Nous allons à nouveau utiliser la méthode du "coude", mais cette fois-ci sur les mots après avoir enlevé les accents au niveau de l'écriture.
+
+```{r}
+g_data <- data.frame(mots)
+# Enlever les accents et les caractères diacritiques
+remove_accents_and_diacritics <- function(text) {
+  # Supprimer les accents
+  text <- stri_trans_general(text, "Latin-ASCII")
+  # Supprimer les caractères diacritiques
+  text <- gsub("[^[:alnum:]]", "", text)
+  return(text)
+}
+
+colonnes_a_convertir <- setdiff(names(g_data), c("département", "commune", "canton", "x", "y"))
+g_data[colonnes_a_convertir] <- lapply(g_data[colonnes_a_convertir], remove_accents_and_diacritics)
+```
+
+```{r}
+if (!file.exists("acm_with_out_act.RData")) {
+  variables_qualitatives <- subset(g_data, select = -c(département, commune, canton, x, y))
+  acm_with_out_act <- MCA(variables_qualitatives, graph = FALSE)
+  save(acm_with_out_act, file = "acm_with_out_act.RData")
+}
+```
+
+```{r}
+load("acm_with_out_act.RData")
+pc_coords <- as.data.frame(acm_with_out_act$ind$coord)
+
+elbow_with_out_act <- fviz_nbclust(pc_coords, kmeans, method = "wss")
+plot(elbow_with_out_act)
+```
+
+On retrouve que le nombre optimal de clusters avec la méthode KNN sur ces données est de 7 et 9. Pour la même raison que pour les données qui contiennent les accents au niveau de l'écriture, nous ne prendrons pas en compte la méthode KNN avec k = 9. Ainsi, pour bien comparer la partition KNN des données sans accents avec celles des accents, nous allons créer des répartitions avec 4 et 5 clusters.
+
+### 4 Clusters
+
+```{r}
+k = 4
+clusters <- kmeans(acm_with_out_act$ind$coord, centers = k)
+g_data$cluster <- clusters$cluster
+
+palette_couleurs <- function(cluster) {
+  couleurs <- my_col_4
+  return(couleurs[cluster])
+}
+
+clusters_uniques_triés <- sort(unique(g_data$cluster))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addCircleMarkers(data = g_data, ~x, ~y, color = ~palette_couleurs(cluster), 
+                   radius = 2, opacity = 1, popup = paste("Commune:", g_data$commune, "<br/>",
+                                                          "Canton:", g_data$canton, "<br/>",
+                                                          "Département:", g_data$département, "<br/>",
+                                                          "Cluster:", g_data$cluster)) %>%
+  addLegend(position = "bottomright", colors = my_col_4,
+            labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
+  addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
+  addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+```
+Taille de chaque cluster :
+
+```{r}
+table(clusters$cluster)
+```
+
+Les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
+
+```{r}
+resultats <- data.frame(Cluster = numeric(),
+                        Mot_1 = character(),
+                        Nom_Colonne_Mot_1 = character(),
+                        Occurrences_Mot_1 = numeric(),
+                        Mot_2 = character(),
+                        Nom_Colonne_Mot_2 = character(),
+                        Occurrences_Mot_2 = numeric(),
+                        stringsAsFactors = FALSE,
+                        row.names = NULL)
+colonnes <- setdiff(names(g_data), c("département", "commune", "canton", "x", "y"))
+
+for (colonne in colonnes) {
+  for (cluster in unique(g_data$cluster)) {
+    subset_data <- g_data[g_data$cluster == cluster, ]
+    modalites <- table(subset_data[[colonne]])
+    
+    if (length(modalites) >= 2) {
+      sorted_modalites <- sort(modalites, decreasing = TRUE)
+      top_mot_1 <- names(sorted_modalites)[1]
+      top_occurrences_1 <- sorted_modalites[1]
+      top_mot_2 <- names(sorted_modalites)[2]
+      top_occurrences_2 <- sorted_modalites[2]
+
+      resultats <- rbind(resultats, data.frame(Cluster = cluster,
+                                               Mot_1 = top_mot_1,
+                                               Nom_Colonne_Mot_1 = colonne,
+                                               Occurrences_Mot_1 = top_occurrences_1,
+                                               Mot_2 = top_mot_2,
+                                               Nom_Colonne_Mot_2 = colonne,
+                                               Occurrences_Mot_2 = top_occurrences_2,
+                                               row.names = NULL))
+    }
+  }
+}
+resultats
+```
+
+### 5 Clusters
+
+```{r}
+k = 5
+clusters_not_act_5 <- kmeans(acm_with_out_act$ind$coord, centers = k)
+g_data$cluster <- clusters_not_act_5$cluster
+
+palette_couleurs <- function(cluster) {
+  couleurs <- my_col_5
+  return(couleurs[cluster])
+}
+
+clusters_not_act_5_vecteur <- clusters_not_act_5$cluster
+clusters_uniques_triés <- sort(unique(g_data$cluster))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addCircleMarkers(data = g_data, ~x, ~y, color = ~palette_couleurs(clusters_not_act_5_vecteur), 
+                   radius = 2, opacity = 1, popup = paste("Commune:", g_data$commune, "<br/>",
+                                                          "Canton:", g_data$canton, "<br/>",
+                                                          "Département:", g_data$département, "<br/>",
+                                                          "Cluster:", g_data$cluster)) %>%
+  addLegend(position = "bottomright", colors = my_col_5,
+            labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
+  addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
+  addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+
+```
+
+Taille de chaque cluster :
+
+```{r}
+table(clusters_not_act_5$cluster)
+```
+
+Les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
+
+```{r}
+resultats <- data.frame(Cluster = numeric(),
+                        Mot_1 = character(),
+                        Nom_Colonne_Mot_1 = character(),
+                        Occurrences_Mot_1 = numeric(),
+                        Mot_2 = character(),
+                        Nom_Colonne_Mot_2 = character(),
+                        Occurrences_Mot_2 = numeric(),
+                        stringsAsFactors = FALSE,
+                        row.names = NULL)
+colonnes <- setdiff(names(g_data), c("département", "commune", "canton", "x", "y"))
+
+for (colonne in colonnes) {
+  for (cluster in unique(g_data$cluster)) {
+    subset_data <- g_data[g_data$cluster == cluster, ]
+    modalites <- table(subset_data[[colonne]])
+    
+    if (length(modalites) >= 2) {
+      sorted_modalites <- sort(modalites, decreasing = TRUE)
+      top_mot_1 <- names(sorted_modalites)[1]
+      top_occurrences_1 <- sorted_modalites[1]
+      top_mot_2 <- names(sorted_modalites)[2]
+      top_occurrences_2 <- sorted_modalites[2]
+
+      resultats <- rbind(resultats, data.frame(Cluster = cluster,
+                                               Mot_1 = top_mot_1,
+                                               Nom_Colonne_Mot_1 = colonne,
+                                               Occurrences_Mot_1 = top_occurrences_1,
+                                               Mot_2 = top_mot_2,
+                                               Nom_Colonne_Mot_2 = colonne,
+                                               Occurrences_Mot_2 = top_occurrences_2,
+                                               row.names = NULL))
+    }
+  }
+}
+resultats
+```
+
+### 7 Clusters
+
+```{r}
+k = 7
+clusters <- kmeans(acm_with_out_act$ind$coord, centers = k)
+g_data$cluster <- clusters$cluster
+
+palette_couleurs <- function(cluster) {
+  couleurs <- my_col_7
+  return(couleurs[cluster])
+}
+
+clusters_uniques_triés <- sort(unique(g_data$cluster))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addCircleMarkers(data = g_data, ~x, ~y, color = ~palette_couleurs(cluster), 
+                   radius = 2, opacity = 1, popup = paste("Commune:", g_data$commune, "<br/>",
+                                                          "Canton:", g_data$canton, "<br/>",
+                                                          "Département:", g_data$département, "<br/>",
+                                                          "Cluster:", g_data$cluster)) %>%
+  addLegend(position = "bottomright", colors = my_col_7,
+            labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
+  addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
+  addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+```
+
+Taille de chaque cluster :
+
+```{r}
+table(clusters$cluster)
+```
+
+Nous observerons que le cluster numéro 2 contient qu'un seul élément et nous souhaitons étudier pourquoi cette commune se retrouve seule. Pour ce faire, nous allons voir si les traductions de chaque mot pour cette commune sont uniques par rapport à toutes les autres communes disponibles dans notre étude.
+
+Les données pour la commune Oueilloux sans les accens :
+
+```{r}
+donnees_oueilloux_act <- subset(g_data, commune == "Oueilloux", select = -c(cluster))
+donnees_oueilloux_act
+```
+
+On va vérifier si les traductions sont uniques par rapport à toutes les autres traductions disponibles pour chaque mot dans toutes les autres communes.
+
+```{r}
+verifier_presence_colonne <- function(colonne_donnees) {
+  colonne_donnees[is.na(colonne_donnees)] <- ""
+  presence <- colonne_donnees %in% g_data[[colonne_donnees]]
+  return(presence)
+}
+```
+
+```{r}
+donnees_oueilloux_act <- subset(donnees_oueilloux_act, select = -c(département, canton, commune))
+resultats <- lapply(colnames(donnees_oueilloux_act), function(col) {
+  if (col %in% c("departement", "canton", "commune")) {
+    return(rep(NA, nrow(donnees_oueilloux_act)))  # Retourner un vecteur de NA de même longueur que le nombre de lignes
+  } else {
+    verifier_presence_colonne(donnees_oueilloux_act[[col]])
+  }
+})
+
+resultats_act <- as.data.frame(resultats)
+colnames(resultats_act) <- colnames(donnees_oueilloux_act)
+resultats_act
+```
+
+Le pourcentage de valeurs traductions uniques pour la commune Oueilloux en ne prenant pas compte les accents est de :
+
+```{r}
+nb_false <- sum(!unlist(resultats))
+cat((nb_false / length(donnees_oueilloux_act)) * 100, "%\n")
+```
+
+Nous pouvons donc constater que cette commune propose une traduction assez unique qui ne se retrouve pas dans les autres communes, d'où sa séparation dans un seul cluster. Lorsque nous séparons les données en un nombre plus important de clusters, les différences se font alors plus perceptibles.
+
+Ainsi les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
+
+```{r}
+resultats <- data.frame(Cluster = numeric(),
+                        Mot_1 = character(),
+                        Nom_Colonne_Mot_1 = character(),
+                        Occurrences_Mot_1 = numeric(),
+                        Mot_2 = character(),
+                        Nom_Colonne_Mot_2 = character(),
+                        Occurrences_Mot_2 = numeric(),
+                        stringsAsFactors = FALSE,
+                        row.names = NULL)
+colonnes <- setdiff(names(g_data), c("département", "commune", "canton", "x", "y"))
+
+for (colonne in colonnes) {
+  for (cluster in unique(g_data$cluster)) {
+    subset_data <- g_data[g_data$cluster == cluster, ]
+    modalites <- table(subset_data[[colonne]])
+    
+    if (length(modalites) >= 2) {
+      sorted_modalites <- sort(modalites, decreasing = TRUE)
+      top_mot_1 <- names(sorted_modalites)[1]
+      top_occurrences_1 <- sorted_modalites[1]
+      top_mot_2 <- names(sorted_modalites)[2]
+      top_occurrences_2 <- sorted_modalites[2]
+
+      resultats <- rbind(resultats, data.frame(Cluster = cluster,
+                                               Mot_1 = top_mot_1,
+                                               Nom_Colonne_Mot_1 = colonne,
+                                               Occurrences_Mot_1 = top_occurrences_1,
+                                               Mot_2 = top_mot_2,
+                                               Nom_Colonne_Mot_2 = colonne,
+                                               Occurrences_Mot_2 = top_occurrences_2,
+                                               row.names = NULL))
+    }
+  }
+}
+resultats
+```
+
+# Analyse des clusters
+
+Nous constatons que lorsque nous enlevons les accents, la composition des quatre clusters change de manière plus ou moins considérable. Cela suggère que la présence ou l'absence d'accents peut influencer l'organisation des clusters et donc la similarité entre les dialectes. Nous nous demanderons alors dans quelle mesure cette organisation des clusters change. Ainsi, nous nous intéressons de plus près aux caractéristiques qui peuvent influencer la création de ces clusters.
+
+___
+
+**[PARTIE Matrices]**
 
 # Classification Ascendante Hiérarchique
 
@@ -1118,7 +1744,7 @@ save(sum_matrix_all_BIG_avec_lv, file = "matrix_A_LV.RData")'
 
 #calcul des matrice de dsitances sans les accents
 '# tous les mots de la grande bdd
-df_all <-mot_copy_2
+df_all <-g_data_2
 df_all_mots_BIG <- df_all[, c(6:106)]
 
 #Jaccard 
@@ -1161,13 +1787,13 @@ Afin de réaliser les partitions, nous avons utilisé la fonction *hclust* de R 
 
 ```{r include=FALSE}
 # tous les mots de la grande bdd avec accents
-df_all <-mots
+df_all <- g_data
 df_all_mots_BIG <- df_all[, c(6:106)]
 
 # dfmots grande bdd sans accents
-mot_copy_2 <- data.frame(mots)
-colonnes_a_convertir <- names(mot_copy_2)[6:ncol(mot_copy_2)]
-mot_copy_2[, colonnes_a_convertir] <- lapply(mot_copy_2[, colonnes_a_convertir], function(x) stri_trans_general(x, "Latin-ASCII"))
+g_data_2 <- data.frame(g_data)
+colonnes_a_convertir <- names(g_data_2)[6:ncol(g_data_2)]
+g_data_2[, colonnes_a_convertir] <- lapply(g_data_2[, colonnes_a_convertir], function(x) stri_trans_general(x, "Latin-ASCII"))
 
 #couleurs cartes
 my_col_4 <- c("#F15025", "#F1D725", "#682E0B","#8FD175")
@@ -2024,7 +2650,7 @@ Nous avons tenté une approche différente pour analyser nos données en nous qu
 En calculant la corrélation entre la distance géographique et linguistique, nous pouvons observer qu'elles sont fortement corrélées avec une corrélation proche de 0.8.
 
 ```{r}
-#df_all <-mots
+#df_all <- g_data
 #points<-cbind(x=as.numeric(df_all$x),y=as.numeric(df_all$y))
 #dist_geo=distm(points)
 #save(dist_geo, file = "matrix_dist_geo.RData")
