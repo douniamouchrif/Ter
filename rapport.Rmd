@@ -36,6 +36,7 @@ library(clue)
 library(dendextend)
 library(geosphere)
 library(nlstools)
+library(class)
 ```
 
 ```{r, include=FALSE}
