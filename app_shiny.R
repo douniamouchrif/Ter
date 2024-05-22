@@ -9,6 +9,7 @@ library(rsconnect)
 library(packrat)
 library(renv)
 library(factoextra)
+library(FactoMineR)
 
 rsconnect::setAccountInfo(name='terproject',
                           token='6ECFF32A0717B46B965CBB02267D2635',
@@ -19,6 +20,7 @@ rsconnect::setAccountInfo(name='terproject',
 # Données
 mots <- read.csv("bdd_grande.csv", sep=";")
 g_data <- mots
+mots_data <- mots
 departements <- st_read("departements.geojson")
 rivers <- st_read("rivers.geojson")
 rivers_lines <- rivers[st_geometry_type(rivers) == "LINESTRING" | st_geometry_type(rivers) == "MULTILINESTRING",]
@@ -51,7 +53,7 @@ coefficients <- coef(fit)
 # UI
 ui <- fluidPage(
   titlePanel("Projet TER - Analyse et représentation de données issues d’une enquête linguistique historique en domaine occitan"),
-  
+  p("ABARKAN Suhaila - MOUCHRIF Dounia - ROMAN Karina (CMI ISI)"),
   tabsetPanel(
     tabPanel("Contextualisation",
              p("Au sein de ce projet TER d’une durée de Janvier à Mai 2024, nous avons réalisé différentes analyses statistiques concernant l’enquête Bourciez. Cette enquête a été menée par Edouard Bourciez (Professeur à l’Université de Bordeaux) en 1894-1895 et suivie par les Académies de Bordeaux et Toulouse."),
@@ -127,10 +129,20 @@ ui <- fluidPage(
              p("Une fois que toutes les fonctions ont été appliquées et que les résultats ont été regroupés dans une matrice, nous obtenons une représentation structurée des mots, où chaque ligne correspond à un mot et chaque colonne représente une caractéristique spécifique du mot."),
              p("Nous utilisont ensuite la fonction catdes pour générer des descripteurs catégoriels à partir des caractéristiques extraites des mots sur l'ensemble des clusters crées dans la partie précédente, en prenant en compte les accents ou non, et pour des valeurs de k égales à 4, 5 et 7 pour la méthode KNN."),
              p("Pour analyser ces résultats, nous examinons les valeurs de p-value et du test de Chi-Carré pour confirmer la significativité de ces associations. Une faible p-value indique une différence statistiquement significative entre les clusters, tandis que des valeurs élevées de v-test suggèrent une forte association entre une catégorie spécifique et un cluster particulier."),
-             sidebarPanel(
-               selectInput("accents_knn", "Accents",
-                           choices = c("Avec" = "Avec", "Sans" = "Sans")),
-               sliderInput("k_value_knn", "Nombre de clusters :", value = 4, min = 2, max = 10, step = 1)
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("accents_analyse", "Accents",
+                             choices = c("Avec" = "Avec", "Sans" = "Sans")),
+                 numericInput("clusters_analyse", "Nombre de clusters:", value = 4, min = 2, max = 10, step = 1)
+               ),
+               mainPanel(
+                  verbatimTextOutput("catdes_homme_éei"),
+                  verbatimTextOutput("catdes_fh"),
+                  verbatimTextOutput("catdes_donnez"),
+                  verbatimTextOutput("catdes_egales"),
+                  verbatimTextOutput("catdes_vb"),
+                  verbatimTextOutput("catdes_un")
+               )
              ),
              
              h3("Conclusion"),
@@ -252,20 +264,20 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   output$data_preview <- renderTable({
-    head(g_data)
+    head(mots_data)
   })
   
   output$map <- renderLeaflet({
     mot <- input$mot
       if (mot == "homme") {
-        mot_hommes <- g_data$HOMME_Mot
+        mot_hommes <- mots_data$HOMME_Mot
         é <- grep("é$", mot_hommes)
         e <- grep("e$", mot_hommes)
         i <- grep("i$", mot_hommes)
         
-        data1 <- data.frame(lng = g_data$x[é], lat = g_data$y[é], mot = mot_hommes[é]) %>% mutate(catégorie = 1)
-        data2 <- data.frame(lng = g_data$x[e], lat = g_data$y[e], mot = mot_hommes[e]) %>% mutate(catégorie = 2)
-        data3 <- data.frame(lng = g_data$x[i], lat = g_data$y[i], mot = mot_hommes[i]) %>% mutate(catégorie = 3)
+        data1 <- data.frame(lng = mots_data$x[é], lat = mots_data$y[é], mot = mot_hommes[é]) %>% mutate(catégorie = 1)
+        data2 <- data.frame(lng = mots_data$x[e], lat = mots_data$y[e], mot = mot_hommes[e]) %>% mutate(catégorie = 2)
+        data3 <- data.frame(lng = mots_data$x[i], lat = mots_data$y[i], mot = mot_hommes[i]) %>% mutate(catégorie = 3)
         
         combined_data <- rbind(data1, data2, data3)
         colors <- c("brown", "orange", "yellow")
@@ -303,14 +315,14 @@ server <- function(input, output) {
           )
         
       } else if (mot == "fils") {
-        mot_fils <- g_data$FILS_Mot
+        mot_fils <- mots_data$FILS_Mot
         h <- grep("^h", mot_fils)
         f <- grep("^f", mot_fils)
         g <- grep("^g", mot_fils)
         
-        data1 <- data.frame(lng = g_data$x[h], lat = g_data$y[h], mot = mot_fils[h]) %>% mutate(catégorie = 1)
-        data2 <- data.frame(lng = g_data$x[f], lat = g_data$y[f], mot = mot_fils[f]) %>% mutate(catégorie = 2)
-        data3 <- data.frame(lng = g_data$x[g], lat = g_data$y[g], mot = mot_fils[g]) %>% mutate(catégorie = 3)
+        data1 <- data.frame(lng = mots_data$x[h], lat = mots_data$y[h], mot = mot_fils[h]) %>% mutate(catégorie = 1)
+        data2 <- data.frame(lng = mots_data$x[f], lat = mots_data$y[f], mot = mot_fils[f]) %>% mutate(catégorie = 2)
+        data3 <- data.frame(lng = mots_data$x[g], lat = mots_data$y[g], mot = mot_fils[g]) %>% mutate(catégorie = 3)
         
         combined_data <- rbind(data1, data2, data3)
         colors <- c("brown", "orange", "yellow")
@@ -348,14 +360,14 @@ server <- function(input, output) {
           )
         
       } else if (mot == "donnez") {
-        mot_donnez <- g_data$DONNEZ_Mot
+        mot_donnez <- mots_data$DONNEZ_Mot
         ba <- grep("^ba", mot_donnez)
         do <- grep("^do", mot_donnez)
         da <- grep("^da", mot_donnez)
         
-        data1 <- data.frame(lng = g_data$x[do], lat = g_data$y[do], mot = mot_donnez[do]) %>% mutate(catégorie = 1)
-        data2 <- data.frame(lng = g_data$x[ba], lat = g_data$y[ba], mot = mot_donnez[ba]) %>% mutate(catégorie = 2)
-        data3 <- data.frame(lng = g_data$x[da], lat = g_data$y[da], mot = mot_donnez[da]) %>% mutate(catégorie = 3)
+        data1 <- data.frame(lng = mots_data$x[do], lat = mots_data$y[do], mot = mot_donnez[do]) %>% mutate(catégorie = 1)
+        data2 <- data.frame(lng = mots_data$x[ba], lat = mots_data$y[ba], mot = mot_donnez[ba]) %>% mutate(catégorie = 2)
+        data3 <- data.frame(lng = mots_data$x[da], lat = mots_data$y[da], mot = mot_donnez[da]) %>% mutate(catégorie = 3)
         
         combined_data <- rbind(data1, data2, data3)
         colors <- c("brown", "orange", "yellow")
@@ -392,15 +404,15 @@ server <- function(input, output) {
             className = "map-title"
           )
       } else if (mot == "égales") {
-        mot_egales <- g_data$EGALES_Mot
+        mot_egales <- mots_data$EGALES_Mot
         os <- grep("os$", mot_egales)
         es <- grep("es$", mot_egales)
         as <- grep("as$", mot_egales)
         
         combined_data <- rbind(
-          data.frame(lng = g_data$x[os], lat = g_data$y[os], mot_egales = mot_egales[os], catégorie = 1),
-          data.frame(lng = g_data$x[es], lat = g_data$y[es], mot_egales = mot_egales[es], catégorie = 2),
-          data.frame(lng = g_data$x[as], lat = g_data$y[as], mot_egales = mot_egales[as], catégorie = 3)
+          data.frame(lng = mots_data$x[os], lat = mots_data$y[os], mot_egales = mot_egales[os], catégorie = 1),
+          data.frame(lng = mots_data$x[es], lat = mots_data$y[es], mot_egales = mot_egales[es], catégorie = 2),
+          data.frame(lng = mots_data$x[as], lat = mots_data$y[as], mot_egales = mot_egales[as], catégorie = 3)
         )
         colors <- c("brown", "orange", "yellow")
         pal <- colorFactor(palette = colors, domain = combined_data$catégorie)
@@ -415,7 +427,7 @@ server <- function(input, output) {
           addLegend(position = "bottomright", pal = pal, values = ~catégorie, title = "Mot 'égales' finissant par :", labFormat = function(type, cuts, p) { labels = c("os -> égalos", "es -> égales", "as -> égalas"); labels[p] }, opacity = 0.7) %>%
           addControl(html = '<h3 style="color: brown; font-size: 24px; background: rgba(255, 255, 255, 0.8);">Répartition des communes pour le mot \'égales\'</h3>', position = "topright", className = "map-title")
       } else if (mot == "village") {
-        mot_village <- g_data$VILLAGE_Mot
+        mot_village <- mots_data$VILLAGE_Mot
         sans_accent <- stri_trans_general(mot_village, "Latin-ASCII")
         
         ye <- grep("ye$", sans_accent)
@@ -423,9 +435,9 @@ server <- function(input, output) {
         ze <- grep("ze$", sans_accent)
         
         combined_data <- rbind(
-          data.frame(lng = g_data$x[ye], lat = g_data$y[ye], sans_accent = sans_accent[ye], catégorie = 1),
-          data.frame(lng = g_data$x[ge_je], lat = g_data$y[ge_je], sans_accent = sans_accent[ge_je], catégorie = 2),
-          data.frame(lng = g_data$x[ze], lat = g_data$y[ze], sans_accent = sans_accent[ze], catégorie = 3)
+          data.frame(lng = mots_data$x[ye], lat = mots_data$y[ye], sans_accent = sans_accent[ye], catégorie = 1),
+          data.frame(lng = mots_data$x[ge_je], lat = mots_data$y[ge_je], sans_accent = sans_accent[ge_je], catégorie = 2),
+          data.frame(lng = mots_data$x[ze], lat = mots_data$y[ze], sans_accent = sans_accent[ze], catégorie = 3)
         )
         colors <- c("brown", "orange", "yellow")
         pal <- colorFactor(palette = colors, domain = combined_data$catégorie)
@@ -440,12 +452,12 @@ server <- function(input, output) {
           addLegend(position = "bottomright", pal = pal, values = ~catégorie, title = "Mot 'village' finissant par :", labFormat = function(type, cuts, p) { labels = c("ye -> bilatye", "ge_je -> bilatge/bilatje", "ze -> bilatze"); labels[p] }, opacity = 0.7) %>%
           addControl(html = '<h3 style="color: brown; font-size: 24px; background: rgba(255, 255, 255, 0.8);">Répartition des communes pour le mot \'village\'</h3>', position = "topright", className = "map-title")
       } else if (mot == "vieille") {
-        mot_vieille <- g_data$VIEILLE_Mot
+        mot_vieille <- mots_data$VIEILLE_Mot
         v <- grep("^v", mot_vieille)
         b <- grep("^b", mot_vieille)
         
-        data1 <- data.frame(lng = g_data$x[v], lat = g_data$y[v], mot = mot_vieille[v]) %>% mutate(catégorie = 1)
-        data2 <- data.frame(lng = g_data$x[b], lat = g_data$y[b], mot = mot_vieille[b]) %>% mutate(catégorie = 2)
+        data1 <- data.frame(lng = mots_data$x[v], lat = mots_data$y[v], mot = mot_vieille[v]) %>% mutate(catégorie = 1)
+        data2 <- data.frame(lng = mots_data$x[b], lat = mots_data$y[b], mot = mot_vieille[b]) %>% mutate(catégorie = 2)
         
         combined_data <- rbind(data1, data2)
         colors <- c("orange", "brown")
@@ -591,6 +603,145 @@ server <- function(input, output) {
     }
   })
   
+  clusters_data <- function(){
+    if (input$accents_analyse == "Avec") {
+      acm_data <- acm_with_act
+    } else if (input$accents_analyse == "Sans") {
+      acm_data <- acm_with_out_act
+    }
+    coords_individus <- acm_data$ind$coord
+    clusters <- kmeans(coords_individus, centers = input$clusters_analyse)
+    list(coords_individus = coords_individus, clusters = clusters)
+  }
+  
+  mots_éei <- function(mot) {
+    res <- rep("autres", length(mot))
+    res[grep("é$", mot)] <- "é"
+    res[grep("e$", mot)] <- "e"
+    res[grep("i$", mot)] <- "i"
+    return(res)
+  }
+  
+  mots_fh <- function(mot) {
+    res <- rep("autre", length(mot))
+    res[grep("^f", mot)] <- "f"
+    res[grep("^h", mot)] <- "h"
+    return(res)
+  }
+  
+  mots_badoda <- function(mot) {
+    res <- rep("autre", length(mot))
+    res[grep("^ba", mot)] <- "ba"
+    res[grep("^do", mot)] <- "do"
+    res[grep("^da", mot)] <- "da"
+    return(res)
+  }
+  
+  mots_osesas <- function(mot) {
+    res <- rep("autre", length(mot))
+    res[grep("os$", mot)] <- "os"
+    res[grep("es$", mot)] <- "es"
+    res[grep("as$", mot)] <- "as"
+    return(res)
+  }
+  
+  mots_vb <- function(mot) {
+    res <- rep("autre", length(mot))
+    res[grep("^v", mot)] <- "v"
+    res[grep("^b", mot)] <- "b"
+    return(res)
+  }
+  
+  mots_n <- function(mot) {
+    res <- rep("autre", length(mot))
+    res[grepl("n", mot)] <- "n"
+    return(res)
+  }
+  
+  output$catdes_homme_éei <- renderPrint({
+    data <- clusters_data()
+     
+    mot_hommes <- mots$HOMME_Mot
+    res_homme_éei <- sapply(mot_hommes, mots_éei)
+    tab_homme_éei <- data.frame(Finit_par_éei = res_homme_éei)
+    tab_homme_éei$partition <- as.factor(data$clusters$cluster)
+    catdes(tab_homme_éei, num.var = 2)
+  })
+  
+  output$catdes_fh <- renderPrint({
+    data <- clusters_data()
+     
+    mots_list <- list(
+      "FILS_Mot" = mots_data$FILS_Mot,
+      "FIT_Mot" = mots_data$FIT_Mot,
+      "FAISANT_Mot" = mots_data$FAISANT_Mot,
+      "FIER_Mot" = mots_data$FIER_Mot,
+      "FEMME_Mot" = mots_data$FEMME_Mot
+    )
+    
+    result <- lapply(names(mots_list), function(mot_name) {
+      mot_data <- mots_list[[mot_name]]
+      res_fh <- sapply(mot_data, mots_fh)
+      tab_fh <- data.frame(Commence_par_fh = res_fh)
+      tab_fh$partition <- as.factor(data$clusters$cluster)
+      catdes(tab_fh, num.var = 2)
+    })
+    
+    result
+  })
+  
+  output$catdes_donnez <- renderPrint({
+    data <- clusters_data()
+     
+    mot_donnez <-  mots_data$DONNEZ_Mot
+    res_donnez_badoda <- sapply(mot_donnez, mots_badoda)
+    tab_donnez_badoda <- data.frame(Commence_par_badoda = res_donnez_badoda)
+    tab_donnez_badoda$partition <- as.factor(data$clusters$cluster)
+    catdes(tab_donnez_badoda, num.var = 2)
+  })
+  
+  output$catdes_egales <- renderPrint({
+    data <- clusters_data()
+     
+    mot_egales <-  mots_data$EGALES_Mot
+    res_egales_osesas <- sapply(mot_egales, mots_osesas)
+    tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
+    tab_egales_osesas$partition <- as.factor(data$clusters$cluster)
+    catdes(tab_egales_osesas, num.var = 2)
+  })
+  
+  output$catdes_vb <- renderPrint({
+    data <- clusters_data()
+     
+    mots_list <- list(
+      "VILLAGE_Mot" = mots_data$VILLAGE_Mot,
+      "VILLE_Mot" = mots_data$VILLE_Mot,
+      "VENDRE_Mot" = mots_data$VENDRE_Mot,
+      "VIEILLE_Mot" =mots_data$VIEILLE_Mot,
+      "VALET_Mot" = mots_data$VALET_Mot
+    )
+    
+    result <- lapply(names(mots_list), function(mot_name) {
+      mot_data <- mots_list[[mot_name]]
+      res_vb <- sapply(mot_data, mots_vb)
+      tab_vb <- data.frame(Commence_par_vb = res_vb)
+      tab_vb$partition <- as.factor(data$clusters$cluster)
+      catdes(tab_vb, num.var = 2)
+    })
+    
+    result
+  })
+  
+  output$catdes_un <- renderPrint({
+    data <- clusters_data()
+     
+    mot_un <-  mots_data$UN_Mot
+    res_un_n <- sapply(mot_un, mots_n)
+    tab_un_n <- data.frame(Contient_un_n = res_un_n)
+    tab_un_n$partition <- as.factor(data$clusters$cluster)
+    catdes(tab_un_n, num.var = 2)
+  })
+ 
   clusters <- reactive({
     df_all <- mots
     hc <- NULL
@@ -750,6 +901,5 @@ server <- function(input, output) {
     summary(fit)
   })
 }
-
 
 shinyApp(ui, server)
