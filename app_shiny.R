@@ -103,9 +103,8 @@ ui <- fluidPage(
                sliderInput("k_value_knn", "Nombre de clusters :", value = 4, min = 2, max = 10, step = 1)
              ),
              mainPanel(
-               plotOutput("plotline_knn")
+               leafletOutput("plotline_knn")
              ),
-             leafletOutput("map_knn"),
              h2("Analyse des clusters"),
              p("Nos observations révèlent une modification significative dans la composition des clusters lorsque les accents sont pas pris en compte, et ce, pour toutes les valeurs de k (ne mobre de custers). Cette constatation suggère que la présence ou l'absence d'accents peut avoir une influence substantielle sur l'organisation des clusters et, par extension, sur la similarité entre les dialectes étudiés. Cette variation soulève la question de l'ampleur du changement dans l'organisation des clusters et son impact sur la représentation des données linguistiques."),
     ),
@@ -500,7 +499,7 @@ server <- function(input, output) {
       return(couleurs[cluster])
     }
     
-    leaflet() %>%
+    map <- leaflet() %>%
       addProviderTiles("CartoDB.Positron") %>%
       addCircleMarkers(data = mots, ~x, ~y, color = ~palette_couleurs(cluster), 
                        radius = 2, opacity = 1, popup = paste("Commune:", mots$commune, "<br/>",
@@ -511,16 +510,16 @@ server <- function(input, output) {
                 labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
       addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
       addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+    map
   }
   
-  output$plotline_knn <- renderPlot({
+  output$plotline_knn <- renderLeaflet({
     if (input$accents_knn == "Avec") {
       map_knn(acm_with_act, input$k_value_knn)
     } else if (input$accents_knn == "Sans") {
       map_knn(acm_with_out_act, input$k_value_knn)
     }
   })
-  
   
   
   clusters <- reactive({
