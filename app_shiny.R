@@ -8,6 +8,7 @@ library(dendextend)
 library(rsconnect)
 library(packrat)
 library(renv)
+library(factoextra)
 
 rsconnect::setAccountInfo(name='terproject',
                           token='6ECFF32A0717B46B965CBB02267D2635',
@@ -28,6 +29,8 @@ load("rdata/matrix_SA_JC.RData")
 load("rdata/matrix_SA_LV.RData")
 load("rdata/matrix_dist_geo.RData")
 load("rdata/matrix_dist_geo.RData")
+load("rdata/acm_with_act.RData")
+load("rdata/acm_with_out_act.RData")
 
 #régression
 dist_geo_km <- dist_geo / 1000
@@ -91,6 +94,7 @@ ui <- fluidPage(
                )
              )
     ),
+    
     tabPanel("KNN",
              h2("Méthode des K plus proches voisins (KNN)"),
              p("Nous souhaitons obtenir des clusters en utilisant la méthode KNN (Méthode des K plus proches voisins) sur l'ensemble des données disponibles. Comme les variables que nous souhaitons utiliser pour le KNN sont toutes des variables qualitatives (elles stockent différentes traductions pour chaque mot), nous devrons tout d'abord utiliser l'ACM (Analyse des Correspondances Multiples). L'ACM est une méthode statistique conçue spécifiquement pour analyser des données catégorielles ou qualitatives. Elle permet d'explorer les relations entre les modalités de différentes variables catégorielles dans un ensemble de données, et de déterminer des distances de similarité ou de dissimilarité entre les modalités. Dans notre cas, l'ACM permet d'analyser la similarité et la dissimilarité entre chaque mot disponible dans chaque colonne et d'observer si les mots se rassemblent, tout en prenant en compte toutes les variables disponibles pour chaque donnée."),
@@ -103,8 +107,13 @@ ui <- fluidPage(
                sliderInput("k_value_knn", "Nombre de clusters :", value = 4, min = 2, max = 10, step = 1)
              ),
              mainPanel(
-               leafletOutput("plotline_knn")
+               plotOutput("clusters_knn"),
              ),
+             leafletOutput("map_knn"),
+             h3("Taille de chaque cluster :"),
+             tableOutput("table_clusters"),
+             tableOutput("table_clusters"),
+             uiOutput("description_knn"),
              h2("Analyse des clusters"),
              p("Nos observations révèlent une modification significative dans la composition des clusters lorsque les accents sont pas pris en compte, et ce, pour toutes les valeurs de k (ne mobre de custers). Cette constatation suggère que la présence ou l'absence d'accents peut avoir une influence substantielle sur l'organisation des clusters et, par extension, sur la similarité entre les dialectes étudiés. Cette variation soulève la question de l'ampleur du changement dans l'organisation des clusters et son impact sur la représentation des données linguistiques."),
     ),
@@ -474,20 +483,6 @@ server <- function(input, output) {
         }
   })
   
-  if (!file.exists("acm_with_act.RData")) {
-    acm_with_act <- MCA(variables_qualitatives, graph = FALSE)
-    save(acm_with_act, file = "acm_with_act.RData")
-  } else {
-    load("acm_with_act.RData")
-  }
-  
-  if (!file.exists("acm_with_out_act.RData")) {
-    acm_with_out_act <- MCA(variables_qualitatives, graph = FALSE)
-    save(acm_with_out_act, file = "acm_with_out_act.RData")
-  } else {
-    load("acm_with_out_act.RData")
-  }
-  
   map_knn <- function(acm_data, k_value) {
     clusters_act <- kmeans(acm_data$ind$coord, centers = k_value)
     mots$cluster <- clusters_act$cluster
@@ -513,7 +508,7 @@ server <- function(input, output) {
     map
   }
   
-  output$plotline_knn <- renderLeaflet({
+  output$map_knn <- renderLeaflet({
     if (input$accents_knn == "Avec") {
       map_knn(acm_with_act, input$k_value_knn)
     } else if (input$accents_knn == "Sans") {
@@ -521,6 +516,32 @@ server <- function(input, output) {
     }
   })
   
+  output$clusters_knn <- renderPlot({
+    if (input$accents_knn == "Avec") {
+      pc_coords <- as.data.frame(acm_with_act$ind$coord)
+      elbow_with_act <- fviz_nbclust(pc_coords, kmeans, method = "wss")
+      plot(elbow_with_act)
+    } else if (input$accents_knn == "Sans") {
+      pc_coords <- as.data.frame(acm_with_out_act$ind$coord)
+      elbow_without_act <- fviz_nbclust(pc_coords, kmeans, method = "wss")
+      plot(elbow_without_act)
+    }
+  })
+  
+  table_clusters <- function(acm_data, k_value) {
+    clusters_act <- kmeans(acm_data$ind$coord, centers = k_value)
+    mots$cluster <- clusters_act$cluster
+    clusters_uniques_triés <- sort(unique(mots$cluster))
+    table(clusters_act$cluster)
+  }
+  
+  output$table_clusters <- renderTable({
+    if (input$accents_knn == "Avec") {
+      table_clusters(acm_with_act, input$k_value_knn)
+    } else if (input$accents_knn == "Sans") {
+      table_clusters(acm_with_out_act, input$k_value_knn)
+    }
+  })
   
   clusters <- reactive({
     df_all <- mots
