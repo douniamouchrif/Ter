@@ -3978,3 +3978,25 @@ Nous avons pu constater que les statistiques offrent un large éventail d'applic
 De plus, nous avons rassemblé nos résultats statistiques dans une application Shiny interactive qui permet d'accéder à ces différentes analyses de manière efficace. Cette application permettrait aux linguistes de manipuler les données et de visualiser instantanément les variations étudiées dans cette enquête.
 
 Pour conclure, l'intégration des statistiques et des outils interactifs dans les sciences humaines représente une combinaison efficace. Cela nous a d'autant plus enrichi quant à l'application directe de nos années d'études statistiques sur un cas concret, ici l'étude linguistique.
+
+___
+
+# Biographie 
+
+https://www.auch-tourisme.com/loccitan-et-le-gascon/ 
+
+https://www.univ-montp3.fr/uoh/occitan/une_langue/co/module_L_occitan_une%20langue_24.html 
+
+https://escolagastonfebus.com/langue/le-gascon-culture-et-langue-indissociables/
+
+https://fr.wikipedia.org/wiki/Gascon
+
+https://shiny.posit.co 
+
+Measuring the diffusion of linguistic change, John Nerbonne, https://royalsocietypublishing.org/doi/abs/10.1098/rstb.2010.0048
+
+Classification automatique - clustering, cours de Mme Marie Chavent
+
+https://irem.univ-lille.fr/~site/IMG/pdf/142_distance_entre_les_mots.pdf
+
+https://lrouviere.github.io/TUTO_VISU/shiny.html 
