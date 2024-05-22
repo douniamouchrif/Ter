@@ -1055,7 +1055,7 @@ m <- leaflet(data = combined_data) %>%
 m
 ```
 
-On constate que pour chacun de ces g_data qui partagent aujourd'hui la même première lettre "v", leur répartition selon la première lettre de leur consonne en attaque est également homogène. En effet, la lettre "v" était prédominante dans le nord de la région, tandis que la lettre "b" était plus fréquemment utilisée dans le sud. Cette constatation met en lumière une cohérence avec les pratiques orthographiques actuelles.
+On constate que pour chacun de ces mots qui partagent aujourd'hui la même première lettre "v", leur répartition selon la première lettre de leur consonne en attaque est également homogène. En effet, la lettre "v" était prédominante dans le nord de la région, tandis que la lettre "b" était plus fréquemment utilisée dans le sud. Cette constatation met en lumière une cohérence avec les pratiques orthographiques actuelles.
 
 En examinant de plus près ces deux groupes de clusters présentant des prononciations distinctes, nous observons :
 
