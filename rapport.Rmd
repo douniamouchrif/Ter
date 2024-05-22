@@ -120,6 +120,8 @@ m <- leaflet(data = coords_data) %>%
 m
 ```
 
+___
+
 # Données {.tabset}
 
 La base de données contient, sur les 5 premières colonnes, des informations sur le département, le canton, la commune et les coordonnées géographiques du mot enregistré. Le reste des colonnes s'agit des 101 mots (1 mot par colonne) recueillis, avec 3 061 origines différentes (1 commune différente par ligne).
@@ -145,6 +147,8 @@ On trouve un total de 10 021 données manquantes parmi les 309 161 données tota
 Cela peut s'expliquer par le fait que, soit le mot ne possède pas de traduction dans la commune d'origine, ou bien d'un oubli de la traduction originelle.
 
 Il faut cependant faire la différence entre les données manquantes dûes à un manque d'information réel et entre les absences de forme. En effet, dans le second cas, cela est possible pour le mot "un" qui n'a pas de traduction dans l'idiome de référence tout simplement car ils n'employaient pas ce mot (par exemple en français de nos jours, dans la phrase “je ne suis pas”, le “ne” n’est très souvent pas prononcé).
+
+___
 
 # Cartographie des caractéristiques linguistiques sur quelques mots {.tabset}
 
@@ -1059,9 +1063,13 @@ En examinant de plus près ces deux groupes de clusters présentant des prononci
 
 - Le groupe "rouge", regroupant des mots commençant par "b", correspond au domaine sud gascon. Le traitement de la consonne en attaque de ce cluster présente ici une forte similitude avec les mots espagnols commençant par "v" mais prononcés "b", renforçant ainsi notre explication.
 
+___
+
 # Clustering
 
 Par la suite, nous nous sommes intéressées à la question suivante : existe-t-il une structure de cohérence des données, sans se placer au niveau du plus petit dénominateur commun (c'est à dire au niveau d'une seule caractéristique) ? Et c'est ici que les techniques de clusturing entrent en jeu. En prenant le texte dans son ensemble, et non mot à mot, nous allons pouvoir trouver différentes structures de cohérance sur lesquelles les linguistes pourront se baser.
+
+___
 
 # KNN {.tabset}
 
@@ -1078,10 +1086,10 @@ Nous allons procéder à créer des clusters à l'aide de la méthode KNN en pre
 Nous allons créer des clusters avec la méthode KNN en prenant en compte les accès dans l’écriture des mots. Dans un première temps nous allons procéder par l'ACM. 
 
 ```{r}
-if (!file.exists("acm_with_act.RData")) {
+if (!file.exists("rdata/acm_with_act.RData")) {
   variables_qualitatives <- subset(g_data, select = -c(département, commune, canton, x, y))
   acm_with_act <- MCA(variables_qualitatives, graph = FALSE)
-  save(acm_with_act, file = "acm_with_act.RData")
+  save(acm_with_act, file = "rdata/acm_with_act.RData")
 }
 ```
 
@@ -1090,7 +1098,7 @@ Ensuite pour décider du nombre de k clusters optimal pour la méthode KNN, nous
 La méthode du "coude" consiste à trouver le nombre optimal de clusters en traçant un graphique qui représente la variance intra-cluster en fonction du nombre de clusters. On observe ensuite le point où l'ajout de clusters supplémentaires ne diminue pas significativement la variance intra-cluster, ce qui est le "coude" du graphique. Ce point indique le nombre optimal de clusters à utiliser pour regrouper les données de manière efficace.
 
 ```{r}
-load("acm_with_act.RData")
+load("rdata/acm_with_act.RData")
 pc_coords <- as.data.frame(acm_with_act$ind$coord)
 
 elbow_with_act <- fviz_nbclust(pc_coords, kmeans, method = "wss")
@@ -1400,15 +1408,15 @@ g_data[colonnes_a_convertir] <- lapply(g_data[colonnes_a_convertir], remove_acce
 ```
 
 ```{r}
-if (!file.exists("acm_with_out_act.RData")) {
+if (!file.exists("rdata/acm_with_out_act.RData")) {
   variables_qualitatives <- subset(g_data, select = -c(département, commune, canton, x, y))
   acm_with_out_act <- MCA(variables_qualitatives, graph = FALSE)
-  save(acm_with_out_act, file = "acm_with_out_act.RData")
+  save(acm_with_out_act, file = "rdata/acm_with_out_act.RData")
 }
 ```
 
 ```{r}
-load("acm_with_out_act.RData")
+load("rdata/acm_with_out_act.RData")
 pc_coords <- as.data.frame(acm_with_out_act$ind$coord)
 
 elbow_with_out_act <- fviz_nbclust(pc_coords, kmeans, method = "wss")
@@ -1685,9 +1693,7 @@ resultats
 
 Nous constatons que lorsque nous enlevons les accents, la composition des quatre clusters change de manière plus ou moins considérable. Cela suggère que la présence ou l'absence d'accents peut influencer l'organisation des clusters et donc la similarité entre les dialectes. Nous nous demanderons alors dans quelle mesure cette organisation des clusters change.
 
-___
-
-# Création de matrices sur quelques mots choisis {.tabset}
+### Création de matrices sur quelques mots choisis {.tabset}
 
 Nous cherchons à comprendre la répartition des données dans les différents clusters générés par la méthode KNN mentionnée précédemment. Pour ce faire, nous allons générer des matrices pour caractériser les mots dans notre corpus de données. Ces matrices captureront diverses propriétés linguistiques telles que l'orthographe, la terminaison et le début des mots.
 
@@ -1739,15 +1745,6 @@ tab_homme_éei$partition <- as.factor(groups)
 catdes(tab_homme_éei, num.var = 2)
 ```
 
-Le test de chi-carré montre une p-value de 0 pour la variable "Finit_par_éei" avec 9 degrés de liberté. Cela indique une association statistiquement significative entre cette variable et les clusters. 
-
-- **Cluster 1** : dominé par les mots se terminant par "e" (89.35%). Les mots se terminant par "i" et "autres" sont sous-représentés
-- **Cluster 2** : principalement constitué de mots se terminant par "i" (60.07%). Les mots se terminant par "e" et "autres" sont sous-représentés
-- **Cluster 3** : comprend également une forte proportion de mots se terminant par "i" (37.15%), mais moins fortement que le cluster 2. Les mots se terminant par "e" et "autres" sont sous-représentés
-- **Cluster 4** : majoritairement composé de mots avec des terminaisons "autres" (63.27%), suivi par ceux se terminant par "é" (17.31%). Les mots se terminant par "e" et "i" sont sous-représentés
-
-Ces clusters montrent clairement que la terminaison des mots est un facteur clé de différenciation dans la creation des clusters.
-
 #### Mot "fils", "fit", "faisant", "fier" et "femme" ...
 
 ##### ... commençant par "h", "f" ou NA
@@ -1795,15 +1792,6 @@ tab_femme_fh$partition <- as.factor(groups)
 catdes(tab_femme_fh, num.var = 2)
 ```
 
-Nous observons des associations significatives entre la première lettre des mots et les clusters formés. Le test de chi-carré avec un p-value de 0 montre une association statistiquement très significative entre les clusters et la première lettre des mots, avec des v-tests allant de 10.76 à 34.30 pour les surreprésentations et de -9.95 à -35.24 pour les sous-représentations.
-
-- **Cluster 1** : dominé par les mots commençant par une lettre autre que "f" ou "h" (90.83%). Les mots commençant par "f" (49.93%) sont également surreprésentés, tandis que ceux commençant par "h" sont sous-représentés (8.35%)
-- **Cluster 2** : principalement constitué de mots commençant par "h" (55.66%). Les mots commençant par une lettre autre que "f" ou "h" (5.04%) et ceux commençant par "f" (0.40%) sont sous-représentés
-- **Cluster 3** : comprend également une forte proportion de mots commençant par "h" (35.98%), mais moins fortement que le cluster 2. les mots commençant par une lettre autre que "f" ou "h" (2.34%) et ceux commençant par "f" (0.13%) sont sous-représentés
-- **Cluster 4** : majoritairement composé de mots commençant par "f" (49.54%). Les mots commençant par une lettre autre que "f" ou "h" (1.80%) et ceux commençant par "h" (0.00%) sont sous-représentés
-
-Ces clusters montrent que la première lettre des mots est un facteur clé de différenciation entre les clusters.
-
 #### Mot "donnez" ...
 
 ##### ... commençant par "ba", "do", "da" ou NA
@@ -1824,24 +1812,6 @@ tab_donnez_badoda$partition <- as.factor(groups)
 catdes(tab_donnez_badoda, num.var = 2)
 ```
 
-Dans ce cas le test de chi-carré montre une association statistiquement très significative entre les clusters et les mots commençant par "ba", "do", "da" ou autre, avec un p-value de 0. Nous avons la composition suivante des clusters :
-
-**Cluster 1**
-- Surreprésenté par les mots commençant par "do" (v-test = 32.64)
-- Sous-représenté par les mots commençant par "ba" (v-test = -16.66) et "da" (v-test = -23.50)
-
-**Cluster 2**
-- Surreprésenté par les mots commençant par "ba" (v-test = 32.70)
-- Sous-représenté par les mots commençant par "do" (v-test = -32.02) et légèrement par "da" (v-test = -3.39)
-
-**Cluster 3**
-- Surreprésenté par les mots commençant par "da" (v-test = 31.99) et d'autres lettres (v-test = 3.84)
-- Sous-représenté par les mots commençant par "ba" (v-test = -5.68) et "do" (v-test = -27.43)
-
-**Cluster 4**
-- Surreprésenté par les mots commençant par "do" (v-test = 25.82)
-- Sous-représenté par les mots commençant par "ba" (v-test = -18.28) et "da" (v-test = -13.19)
-
 #### Mot "égales" ...
 
 #### ... finissant par "os", "es", "as" ou NA
@@ -1861,26 +1831,6 @@ tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
 tab_egales_osesas$partition <- as.factor(groups)
 catdes(tab_egales_osesas, num.var = 2)
 ```
-
-Le test de chi-carré montre une association statistiquement très significative entre les clusters et les mots qui se finisent par "as", "os", "es" ou autres, avec un p-value de $1.41 \times 10^{-294}$. On a la composition suivant pour les clusters :
-
-**Cluster 1**
-- Surreprésenté par les mots finissant par "es" (v-test = 7.90)
-- Sous-représenté par les mots finissant par "as" (v-test = -15.85)
-
-**Cluster 2**
-- Surreprésenté par les mots finissant par "es" (v-test = 11.51) et "os" (v-test = 5.52)
-- Sous-représenté par les mots finissant par "as" (v-test = -13.45) et d'autres lettres (v-test = -14.85)
-
-**Cluster 3**
-- Surreprésenté par les mots finissant par "as" (v-test = 10.03) et "os" (v-test = 3.68)
-- Sous-représenté par les mots finissant par "es" (v-test = -10.79)
-
-**Cluster 4**
-- Surreprésenté par les mots finissant par "as" (v-test = 17.84) et d'autres lettres (v-test = 17.07)
-- Sous-représenté par les mots finissant par "os" (v-test = -14.01) et "es" (v-test = -18.04)
-
-Le Cluster 1 est fortement associé aux mots se terminant par "es", tandis que le Cluster 4 est associé aux mots se terminant par "as" et d'autres terminaisons.
 
 #### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
 
@@ -1929,26 +1879,6 @@ tab_valet_vb$partition <- as.factor(groups)
 catdes(tab_valet_vb, num.var = 2)
 ```
 
-Le test de chi-carré montre une association statistiquement significative entre les clusters et les mots commencent par "v" ou "b", avec un p-value de 0.
-
-**Cluster 1**
-- Surreprésenté par les mots commençant par "b" (v-test = 14.22)
-- Sous-représenté par les mots commençant par d'autres lettres (v-test = -7.75) et "v" (v-test = -11.52)
-
-**Cluster 2**
-- Surreprésenté par les mots commençant par d'autres lettres (v-test = 12.13) et "b" (v-test = 7.47)
-- Sous-représenté par les mots commençant par "v" (v-test = -18.68)
-
-**Cluster 3**
-- Surreprésenté par les mots commençant par "b" (v-test = 13.90)
-- Sous-représenté par les mots commençant par d'autres lettres (v-test = -3.81) et "v" (v-test = -13.91)
-
-**Cluster 4**
-- Surreprésenté par les mots commençant par "v" (v-test = Inf)
-- Sous-représenté par les mots commençant par "b" (v-test = -37.99) et d'autres lettres (v-test = -4.37)
-
-Le Cluster 1 est fortement associé aux mots commençant par "b", tandis que le Cluster 4 est associé aux mots commençant par "v".
-
 #### Mot "un" ...
 
 ##### ... avec un "n" ou non (NA)
@@ -1966,26 +1896,6 @@ tab_un_n <- data.frame(Contient_un_n = res_un_n)
 tab_un_n$partition <- as.factor(groups)
 catdes(tab_un_n, num.var = 2)
 ```
-
-Le test de chi-carré révèle une association statistiquement très significative entre les clusters et les mots qui contiennent la lettre "n" ou non, avec un p-value de 0.
-
-**Cluster 1**
-- Présente une forte concentration de mots contenant la lettre "n" (v-test = 28.30)
-- Sous-représentation significative des mots n'incluant pas la lettre "n"
-
-**Cluster 2**
-- Également une forte concentration de mots contenant la lettre "n" (v-test = 3.50), mais moins prononcée que dans le Cluster 1
-- Légère sous-représentation des mots n'incluant pas la lettre "n"
-
-**Cluster 3**
-- Mots presque exclusivement composés de mots contenant la lettre "n" (v-test = Inf)
-- Aucun mot du cluster ne contient la lettre "n"
-
-**Cluster 4**
-- Forte concentration de mots contenant la lettre "n" (v-test = 15.47)
-- Sous-représentation significative des mots n'incluant pas la lettre "n"
-
-Les clusters 1 et 4 sont particulièrement caractérisés par la présence de cette lettre, tandis que le cluster 3 en est dépourvu.
 
 ### 5 clusters {.tabset}
 
@@ -2019,30 +1929,6 @@ tab_homme_éei$partition <- as.factor(groups)
 catdes(tab_homme_éei, num.var = 2)
 ```
 
-Le test de chi-carré indique une association statistiquement significative entre les clusters et les mots se finissent par "e", "i" ou "é", avec une p-value de 0.
-
-**Cluster 1**
-- Présente une forte concentration de mots se terminant par "é" (v-test = 14.56)
-- Sous-représentation significative des mots se terminant par "e" et "i"
-
-**Cluster 2**
-- Présente une forte concentration de mots se terminant par "i" (v-test = 28.17)
-- Sous-représentation significative des mots se terminant par "é", "e" et d'autres lettres
-
-**Cluster 3**
-- Présente une forte concentration de mots se terminant par "autres" (v-test = 16.96)
-- Sous-représentation significative des mots se terminant par "e" et "i"
-
-**Cluster 4**
-- Présente une forte concentration de mots se terminant par "é" (v-test = 16.78)
-- Sous-représentation significative des mots se terminant par "e", "i" et d'autres lettres
-
-**Cluster 5**
-- Présente une forte concentration de mots se terminant par "e" (v-test = 37.96)
-- Sous-représentation significative des mots se terminant par "i", "é" et d'autres lettres
-
-Chaque cluster semble être caractérisé par une terminaison spécifique des mots, ce qui suggère une structure sémantique sous-jacente dans les données.
-
 #### Mot "fils", "fit", "faisant", "fier" et "femme" ...
 
 ##### ... commençant par "h", "f" ou NA
@@ -2090,30 +1976,6 @@ tab_femme_fh$partition <- as.factor(groups)
 catdes(tab_femme_fh, num.var = 2)
 ```
 
-Le test de chi-carré indique une association statistiquement significative entre les clusters et les mots commencent par la lettre "f", "h" ou autres, avec une p-value de 0 dans chaque cas.
-
-**Cluster 1**
-- Forte concentration de mots commençant par "f" (v-test = 22.51)
-- Sous-représentation significative des mots commençant par d'autres lettres et "h"
-
-**Cluster 2**
-- Forte concentration de mots commençant par "h" (v-test = Inf).
-- Sous-représentation significative des mots commençant par d'autres lettres et "f"
-
-**Cluster 3**
-- Forte concentration de mots commençant par "f" (v-test = 25.00).
-- Sous-représentation significative des mots commençant par d'autres lettres et "h"
-
-**Cluster 4**
-- Forte concentration de mots commençant par "f" (v-test = 26.74).
-- Sous-représentation significative des mots commençant par d'autres lettres et "h"
-
-**Cluster 5**
-- Forte concentration de mots commençant par "autre" (v-test = 27.77).
-- Sous-représentation significative des mots commençant par "h" et "f"
-
-Chaque cluster semble être caractérisé par une initiation spécifique des mots, ce qui suggère une structure sémantique sous-jacente dans les données.
-
 #### Mot "donnez" ...
 
 ##### ... commençant par "ba", "do", "da" ou NA
@@ -2134,12 +1996,6 @@ tab_donnez_badoda$partition <- as.factor(groups)
 catdes(tab_donnez_badoda, num.var = 2)
 ```
 
-Les résultats de l'analyse suggèrent que les mots commençant par **ba, do ou da** influencent de manière significative la formation des clusters. Chaque cluster semble avoir une composition distincte en fonction de préfixes mots.
-
-Par exemple, dans le cluster 3, les mots commençant par **da** sont fortement prédominants (100% Cla/Mod), ce qui suggère une forte association entre ces mots et ce cluster. En revanche, dans le cluster 4, aucun mot ne commence par **da** (0% Cla/Mod), indiquant une association négative entre cette catégorie et ce cluster.
-
-En résumé, cette analyse révèle que les mots qui commencent par **ba, do ou da** joue un rôle important dans la formation des clusters et peut être utilisée pour comprendre les caractéristiques distinctives de chaque groupe dans l'ensemble de données.
-
 #### Mot "égales" ...
 
 ##### ... finissant par "os", "es", "as" ou NA
@@ -2159,26 +2015,6 @@ tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
 tab_egales_osesas$partition <- as.factor(groups)
 catdes(tab_egales_osesas, num.var = 2)
 ```
-
-Le test du chi-carré révèle une association statistiquement très significative entre les clusters et les mots se terminant par "as", "os", "es", ou autres, avec un p-value remarquable de $$1.41 \times 10^{-294}$$. On a la composition de chaque cluster :
-
-**Cluster 1**
-- Sur-représenté par les mots se terminant par "es" (v-test = 7.90)
-- Sous-représenté par les mots se terminant par "as" (v-test = -15.85)
-
-**Cluster 2**
-- Sur-représenté par les mots se terminant par "es" (v-test = 11.51) et "os" (v-test = 5.52)
-- Sous-représenté par les mots se terminant par "as" (v-test = -13.45) et d'autres lettres (v-test = -14.85)
-
-**Cluster 3**
-- Sur-représenté par les mots se terminant par "as" (v-test = 10.03) et "os" (v-test = 3.68)
-- Sous-représenté par les mots se terminant par "es" (v-test = -10.79)
-
-**Cluster 4**
-- Sur-représenté par les mots se terminant par "as" (v-test = 17.84) et d'autres lettres (v-test = 17.07)
-- Sous-représenté par les mots se terminant par "os" (v-test = -14.01) et "es" (v-test = -18.04)
-
-Le Cluster 1 est fortement associé aux mots se terminant par "es", tandis que le Cluster 4 est associé aux mots se terminant par "as" et d'autres terminaisons.
 
 #### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
 
@@ -2227,30 +2063,6 @@ tab_valet_vb$partition <- as.factor(groups)
 catdes(tab_valet_vb, num.var = 2)
 ```
 
-Le test du chi-carré indique une association statistiquement très significative entre les clusters et les mots qui commencent par différentes lettres, avec un p-value remarquable de 0. On a la composition de chaque cluster suivante :
-
-**Cluster 1**
-- Sur-représenté par les mots commençant par "v" (v-test = 22.41)
-- Sous-représenté par les mots commençant par "b" (v-test = -21.44)
-
-**Cluster 2**
-- Sur-représenté par les mots commençant par "b" (v-test = 23.15)
-- Sous-représenté par les mots commençant par "v" (v-test = -25.23)
-
-**Cluster 3**
-- Sur-représenté par les mots commençant par "v" (v-test = 30.09)
-- Sous-représenté par les mots commençant par "b" (v-test = -29.50)
-
-**Cluster 4**
-- Sur-représenté par les mots commençant par "b" (v-test = 5.92)
-- Sous-représenté par les mots commençant par "v" (v-test = -6.39)
-
-**Cluster 5**
-- Sur-représenté par les mots commençant par "b" (v-test = 10.46)
-- Sous-représenté par les mots commençant par "v" (v-test = -12.14)
-
-Les mots commençant par "v" dominent le Cluster 1, tandis que les mots commençant par "b" sont plus fréquents dans les Clusters 2, 3, 4, et 5.
-
 #### Mot "un" ...
 
 ##### ... avec un "n" ou non (NA)
@@ -2268,30 +2080,6 @@ tab_un_n <- data.frame(Contient_un_n = res_un_n)
 tab_un_n$partition <- as.factor(groups)
 catdes(tab_un_n, num.var = 2)
 ```
-
-Le test du chi-carré montre une association statistiquement très significative entre les clusters et la présence ou l'absence du caractère "n" dans les mots, avec un p-value remarquable de $$2.38 \times 10^{-235}$$. La répartition de chaque cluster est la suivante :
-
-**Cluster 1**
-- Sur-représenté par les mots contenant "n" (v-test = 14.00)
-- Sous-représenté par les mots ne contenant pas "n" (v-test = -14.00)
-
-**Cluster 2**
-- Sur-représenté par les mots ne contenant pas "n" (v-test = 37.08)
-- Sous-représenté par les mots contenant "n" (v-test = -37.08)
-
-**Cluster 3**
-- Sur-représenté par les mots contenant "n" (v-test = 11.13)
-- Sous-représenté par les mots ne contenant pas "n" (v-test = -11.13)
-
-**Cluster 4**
-- Sur-représenté par les mots contenant "n" (v-test = 16.92)
-- Sous-représenté par les mots ne contenant pas "n" (v-test = -16.92)
-
-**Cluster 5**
-- Sur-représenté par les mots contenant "n" (v-test = 19.35)
-- Sous-représenté par les mots ne contenant pas "n" (v-test = -19.35)
-
-Cela montre que la présence ou l'absence du caractère "n" dans les mots est un facteur distinctif des clusters identifiés.
 
 ### 7 clusters {.tabset}
 
@@ -2325,33 +2113,6 @@ tab_homme_éei$partition <- as.factor(groups)
 catdes(tab_homme_éei, num.var = 2)
 ```
 
-Le test du chi-carré indique une association statistiquement très significative entre les clusters et les mots se terminant par "ée", "é", "i", ou autres, avec une p-value remarquablement faible de 0. La répartition de chaque cluster est la suivante :
-
-Voici la description corrigée de chaque cluster par catégorie :
-
-**Cluster 1**
-- Sur-représenté par les mots se terminant par "autres" (v-test = 16.26)
-- Sous-représenté par les mots se terminant par "é" (v-test = 4.01), "e" (v-test = -7.90), et "i" (v-test = -10.80)
-
-**Cluster 2**
-- Sur-représenté par les mots se terminant par "é" (v-test = 22.60)
-- Sous-représenté par les mots se terminant par "e" (v-test = -7.19), "i" (v-test = -20.22) et d'autres lettres (v-test = -4.10)
-
-**Cluster 3**
-- Aucun résultat
-
-**Cluster 4**
-- Sur-représenté par les mots se terminant par "i" (v-test = 14.29)
-- Sous-représenté par les mots se terminant par "autres" (v-test = -4.80), "e" (v-test = -15.66) et d'autres lettres (v-test = -4.80)
-
-**Cluster 6**
-- Sur-représenté par les mots se terminant par "e" (v-test = Inf)
-- Sous-représenté par les mots se terminant par "autres" (v-test = -4.24), "i" (v-test = -15.06), et "é" (v-test = -21.48)
-
-**Cluster 7**
-- Sur-représenté par les mots se terminant par "i" (v-test = 17.13)
-- Sous-représenté par les mots se terminant par "é" (v-test = -2.82), "autres" (v-test = -3.62), et "e" (v-test = -16.47)
-
 #### Mot "fils", "fit", "faisant", "fier" et "femme" ...
 
 ##### ... commençant par "h", "f" ou NA
@@ -2399,32 +2160,6 @@ tab_femme_fh$partition <- as.factor(groups)
 catdes(tab_femme_fh, num.var = 2)
 ```
 
-Les résultats des tests du chi-carré indiquent une association statistiquement significative entre les clusters et les mots commençant par différentes lettres, avec un p-value remarquablement faible de 0. Cela indique que l'association observée entre les clusters et les mots qui débutent par diverses lettres ne peut pas être attribuée au hasard.
-
-**Cluster 7**
-- Sur-représenté par les mots commençant par "f" (v-test = 27.78)
-- Sous-représenté par les mots commençant par d'autres lettres (v-test = -2.86) et par "h" (v-test = -22.57)
-
-**Cluster 7**
-- Sur-représenté par les mots commençant par d'autres lettres (v-test = 4.76)
-- Sous-représenté par les mots commençant par "f" (v-test = -6.91) et par "h" (v-test = -15.01)
-
-**Cluster 7**
-- Sur-représenté par les mots commençant par "h" (v-test = 23.05)
-- Sous-représenté par les mots commençant par "f" (v-test = -24.20)
-
-**Cluster 7**
-- Sur-représenté par les mots commençant par "h" (v-test = 18.80)
-- Sous-représenté par les mots commençant par "f" (v-test = -18.42) et par d'autres lettres (v-test = -2.04)
-
-**Cluster 7**
-- Sur-représenté par les mots commençant par "f" (v-test = 30.92)
-- Sous-représenté par les mots commençant par "h" (v-test = -30.80) et par d'autres lettres (v-test = -2.00)
-
-**Cluster 7**
-- Sur-représenté par les mots commençant par "h" (v-test = 20.59)
-- Sous-représenté par les mots commençant par "f" (v-test = -20.52)
-
 #### Mot "donnez" ...
 
 ##### ... commençant par "ba", "do", "da" ou NA
@@ -2445,35 +2180,6 @@ tab_donnez_badoda$partition <- as.factor(groups)
 catdes(tab_donnez_badoda, num.var = 2)
 ```
 
-Les résultats des tests du chi-carré révèlent une association statistiquement significative entre les clusters et les mots qui commencent par différentes séquences de lettres, avec une p-value négligeable de 0. 
-
-**Cluster 1 :**
-- Les mots commençant par "do" sont fortement sur-représentés, avec un v-test de 22.69
-- Les mots débutant par "ba" sont également représentés, bien que de manière moins significative
-
-**Cluster 2 :**
-- Les mots commençant par "do" sont sur-représentés, avec un v-test de 12.47
-- Les mots commençant par "ba" sont également présents, mais de manière moins significative
-- Les mots débutant par "da" sont sous-représentés dans ce cluster
-
-**Cluster 3 :**
-- Les mots commençant par "ba" sont fortement sur-représentés, avec un v-test de 23.99
-- Les mots commençant par "do" et "da" sont également présents, mais de manière moins significative
-
-**Cluster 4 :**
-- Les mots commençant par "da" sont très fortement sur-représentés, avec un v-test de 34.34
-- Les mots commençant par d'autres combinaisons littéraires et "ba" sont également présents, mais moins fréquents
-- Les mots commençant par "do" sont absents de ce cluster
-
-**Cluster 5 :**
-- Les mots commençant par "do" sont très fortement sur-représentés, avec un v-test de 32.44
-- Les mots commençant par d'autres combinaisons littéraires  sont également présents, bien que moins fréquents
-- Les mots commençant par "da" et "ba" sont moins représentés dans ce cluster
-
-**Cluster 6 :**
-- Les mots commençant par "ba" sont fortement sur-représentés, avec un v-test de 18.13
-- Les mots commençant par "do" sont également présents, mais de manière moins significative
-
 #### Mot "égales" ...
 
 ##### ... finissant par "os", "es", "as" ou NA
@@ -2493,39 +2199,6 @@ tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
 tab_egales_osesas$partition <- as.factor(groups)
 catdes(tab_egales_osesas, num.var = 2)
 ```
-
-Les résultats des tests du chi-carré révèlent une association statistiquement significative entre les clusters et les mots qui finissent par différentes séquences de lettres, avec une p-value négligeable de 0. Nous avons la répartition suivante des clusters :
-
-**Cluster 1 :**
-- Les mots se terminant par "as" sont nettement sur-représentés, avec un v-test de 19.59
-- Les mots finissant par d'autres combinaisons littéraires sont également présents mais moins fréquents, avec un v-test de 14.26
-- Les mots se terminant par "es" et "os" sont peu fréquents dans ce cluster
-
-**Cluster 2 :**
-- Les mots se terminant par "es" sont fortement sur-représentés, avec un v-test de 25.93
-- Les mots finissant par "as" sont absents de ce cluster
-- Les mots se terminant par "os" sont également présents mais moins fréquents, avec un v-test de -22.86
-
-**Cluster 4 :**
-- Les mots se terminant par "os" sont fortement sur-représentés, avec un v-test de 28.51
-- Les mots finissant par "as" sont également présents mais moins fréquents, avec un v-test de -9.37
-- Les mots finissant par "es" sont moins représentés dans ce cluster et par d'autres combinaisons littéraires
-
-**Cluster 5 :**
-- Les mots se terminant par "as" sont sur-représentés dans ce cluster, avec un v-test de 10.70
-- Les mots finissant par "os" sont également présents mais moins fréquents, avec un v-test de 3.09
-- Les mots se terminant par "es" sont moins représentés dans ce cluster
-
-**Cluster 6:**
-- Les mots se terminant par "os" sont fortement sur-représentés, avec un v-test de 18.57
-- Les mots finissant par "autre" sont également présents mais moins fréquents, avec un v-test de 4.68
-- Les mots se terminant par "as" et "es" sont moins représentés dans ce cluster
-
-**Cluster 7 :**
-- Les mots se terminant par "es" sont fortement sur-représentés, avec un v-test de 30.92
-- Les mots finissant par d'autres combinaisons littéraires sont également présents mais moins fréquents, avec un v-test de -7.98
-- Les mots finissant par "as" sont absents de ce cluster
-- Les mots se terminant par "os" sont également présents mais moins fréquents, avec un v-test de -22.83
 
 #### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
 
@@ -2574,35 +2247,6 @@ tab_valet_vb$partition <- as.factor(groups)
 catdes(tab_valet_vb, num.var = 2)
 ```
 
-Les résultats des tests du chi-carré suggèrent une forte association statistiquement significative entre les clusters et les mots qui commencent par différentes séquences de lettres, avec une p-value très proche de zéro. Cela indique que la répartition des mots dans chaque cluster est fortement influencée par la séquence initiale des lettres. Voici la répartition des clusters :
-
-**Cluster 1 :**
-- Les mots commençant par "v" sont nettement sur-représentés, avec un v-test de 38.17
-- Les mots commençant par "b" sont absents de ce cluster
-
-**Cluster 2 :**
-- Les mots commençant par "b" dominent ce cluster, avec un v-test de 10.10
-- Les mots commençant par d'autres séquences de lettres sont également présents mais moins fréquents
-
-**Cluster 4 :**
-- Les mots commençant par "b" sont fortement sur-représentés, avec un v-test de 12.07
-- Les mots commençant par d'autres combinaisons littéraires sont également présents mais moins fréquents
-- Les mots commençant par "v" sont absents de ce cluster
-
-**Cluster 5 :**
-- Les mots commençant par "b" sont fortement sur-représentés, avec un v-test de 14.26
-- Les mots commençant par d'autres combinaisons littéraires sont également présents mais moins fréquents
-- Les mots commençant par "v" sont absents de ce cluster
-
-**Cluster 6 :**
-- Les mots commençant par "v" sont sur-représentés, avec un v-test de 4.58
-- Les mots commençant par "b" sont également présents mais moins fréquents
-
-**Cluster 7 :**
-- Les mots commençant par "b" sont fortement sur-représentés, avec un v-test de 12.30
-- Les mots commençant par d'autres combinaisons littéraires sont également présents mais moins fréquents
-- Les mots commençant par "v" sont absents de ce cluster
-
 #### Mot "un" ...
 
 ##### ... avec un "n" ou non (NA)
@@ -2620,36 +2264,6 @@ tab_un_n <- data.frame(Contient_un_n = res_un_n)
 tab_un_n$partition <- as.factor(groups)
 catdes(tab_un_n, num.var = 2)
 ```
-
-Les résultats des tests du chi-carré indiquent une association statistiquement significative entre les clusters et les mots qui se finisent par "n" ou autres lettres. La p-value, très proche de zéro, suggère une corrélation forte entre ces deux variables. Cela suggère que la répartition des observations dans chaque cluster est influencée par les différentes séquences de lettres initiales. On a les répartitions observées dans chaque cluster suivantes:
-
-**Cluster 1 :**
-- Les observations contenant la lettre "n" sont fortement sur-représentées, avec un v-test de 13.73
-- Les observations contenant d'autres lettres sont moins représentées dans ce cluster
-
-**Cluster 2 :**
-- Les observations contenant la lettre "n" dominent ce cluster, avec un v-test de 18.54
-- Les observations contenant d'autres lettres sont peu représentées dans ce cluster
-
-**Cluster 4 :**
-- Les observations contenant la lettre "n" sont fortement sur-représentées, avec un v-test de 14.59
-- Les observations contenant d'autres lettres sont également présentes mais moins fréquentes
-
-**Cluster 5 :**
-- Les observations contenant la lettre "n" sont absentes de ce cluster
-- Les observations contenant d'autres lettres sont fortement sur-représentées, avec un v-test de -Inf
-
-**Cluster 6 :**
-- Les observations contenant la lettre "n" sont fortement sur-représentées, avec un v-test de 19.87
-- Les observations contenant d'autres lettres sont absentes de ce cluster
-
-**Cluster 7 :**
-- Les observations contenant la lettre "n" sont absentes de ce cluster
-- Les observations contenant d'autres lettres sont fortement sur-représentées, avec un v-test de 4.80
-
-## Sans les accents {.tabset}
-
-De manière similaire à l'analyse précédente prenant en compte les accents, nous pouvons appliquer la même approche pour les clusters formés à partir des traductions en préservant les accents, en utilisant des clusters KNN avec les valeurs de k fixées à 4, 5 et 7. Cependant, cette fois-ci, nous nous contenterons de présenter les résultats de la fonction **catdes** sans les commenter.
 
 ### 4 clusters {.tabset}
 
@@ -3206,7 +2820,59 @@ catdes(tab_un_n, num.var = 2)
 
 ## Conclusion
 
-Dans cette section, nous avons exploré la relation entre les clusters formés à partir de données textuelles à l'aide de la méthode KNN et les variables catégorielles en utilisant des matrices de similarité. Ces matrices ont été créées en calculant les similarités entre les données textuelles et les variables catégorielles, ce qui nous a permis de quantifier les relations entre ces différentes entités.
+La fonction ``catdes`` en R permet de décrire les clusters obtenus par une méthode de clustering, en analysant la répartition des variables catégorielles dans ces clusters. Les résultats de cette fonction permettent de comprendre à partir de quelles caractéristiques linguistiques ces clusters sont formés :
+
+1. **Cla/Mod** (Classe/Modalité) : 
+   - Cette colonne représente le pourcentage de la modalité de la variable qui se trouve dans le cluster donné. Autrement dit, c'est la proportion de cette modalité dans le cluster par rapport à l'ensemble de cette modalité dans la population totale.
+
+2. **Mod/Cla** (Modalité/Classe) :
+   - Cette colonne représente le pourcentage de la modalité parmi les individus du cluster. C'est la proportion d'individus ayant cette modalité dans le cluster par rapport au total des individus dans le cluster.
+
+3. **Global p.value** :
+   - La valeur p globale (p-value) évalue la signification statistique de la répartition de la modalité de la variable dans le cluster. Une petite valeur p (typiquement inférieure à 0,05) indique que la modalité de la variable est significativement plus (ou moins) fréquente dans ce cluster que ce à quoi on pourrait s'attendre par hasard.
+
+4. **v.test** :
+   - Le test v (v-test) est une statistique qui compare la proportion observée de la modalité dans le cluster à la proportion attendue (en supposant une répartition uniforme). Une valeur de test v élevée (en valeur absolue) indique que la modalité est particulièrement sur-représentée (ou sous-représentée) dans ce cluster. Une valeur positive indique une sur-représentation et une valeur négative indique une sous-représentation. La statistique v-test suit approximativement une distribution normale, donc des valeurs en dehors de [-1.96, 1.96] correspondent à des p-values inférieures à 0.05, indiquant une significativité statistique.
+
+Nous allons analyser le cluster numéro 1 avec k = 4 pour le KNN avec les données qui prennent en compte les accents pour une meilleure compréhension. On a les résultats suivants :
+
+**Cluster 1**
+
+Cla/Mod (Classe/Modalité) :
+
+- Finit_par_éei=e : 89.71% des mots qui se terminent par "e" appartiennent à ce cluster
+
+- Finit_par_éei=autres : 10.20% des mots qui se terminent par "autres" appartiennent à ce cluster
+
+- Finit_par_éei=i : 1.57% des mots qui se terminent par "i" appartiennent à ce cluster
+
+Mod/Cla (Modalité/Classe) :
+
+- Finit_par_éei=e : 48.30% des mots dans ce cluster se terminent par "e"
+
+- Finit_par_éei=autres : 1.46% des mots dans ce cluster se terminent par "autres"
+
+- Finit_par_éei=i : 1.26% des mots dans ce cluster se terminent par "i"
+
+Global p.value :
+
+- Finit_par_éei=e : 4.05e-208, indiquant une très forte signification statistique
+
+- Finit_par_éei=autres : 1.90e-11, indiquant une forte signification statistique
+
+- Finit_par_éei=i : 2.62e-153, indiquant une très forte signification statistique
+
+v.test :
+
+- Finit_par_éei=e : 30.79, indiquant une sur-représentation significative de cette modalité
+
+- Finit_par_éei=autres : -6.71, indiquant une sous-représentation significative de cette modalité
+
+- Finit_par_éei=i : -26.38, indiquant une sous-représentation significative de cette modalité
+
+Ces mesures aide à comprendre quelles caractéristiques définissent chaque cluster, en identifiant quelles modalités de variables catégorielles sont sur-représentées ou sous-représentées dans chaque cluster.
+
+Ainsi dans cette section, nous avons exploré la relation entre les clusters formés à partir de données textuelles à l'aide de la méthode KNN et les variables catégorielles en utilisant des matrices de similarité. Ces matrices ont été créées en calculant les similarités entre les données textuelles et les variables catégorielles, ce qui nous a permis de quantifier les relations entre ces différentes entités.
 
 Nous avons constaté que la fonction **catdes** est un outil précieux pour mettre en lumière les associations entre les clusters et les variables catégorielles. Cela a grandement enrichi notre compréhension de la répartition des dialectes dans la région étudiée, en nous permettant de mieux comprendre les tendances et les structures sous-jacentes des données linguistiques.
 
@@ -4159,6 +3825,8 @@ map_all
 
 À travers les différentes repésentations graphiques, nous pouvons observer des cartes cohérentes, et ceci même sans critères géographiques. Les différentes partitions réflètent plutôt bien la réalité, ce qui est un bon indicateur sur la qualité des données. À partir des différentes méthodes et mesures de distance linguistique, nous obtenons des structures de cohérence différentes mais chacune pouvant être expliquée soit par des faits historiques ou géographiques. Par exemple, nous pouvons observer sur la majorité des cartes obtenues une coupe transversale au niveau de la Garonne, ce qui pourrait expliquer la séparation linguistique à ce niveau-là. Nous pouvons aussi voir des zones historiques apparaître tels que la Gironde ou la Dordogne par exemple. Enfin, nous avons pu voir que les clusters obtenus avec la méthode ward avec et sans accents sont assez similaires tandis que les clusters obtenus avec la méthode complete avec et sans accents sont plutôt différents. Pour finir, ce sera au linguiste de voir quelles partitions sont les plus parlantes. 
 
+___
+
 # Distance linguistique et géographique
 
 Le fondateur de la dialectométrie, Séguy, est l'un des premiers à avoir étudié la relation entre "la distance spatiale et la distance lexicale". Il a comparé la courbe obtenue avec celle où la distance lexicale varie avec la racine carrée du logarithme de la distance géographique. La courbe de Séguy est une courbe qui monte au début puis devient assez stable ensuite. Cette courbe convexe traduit un phénomène qui est assez générale (*Measuring the diffusion of linguistic change*, John Nerbonne).
@@ -4300,6 +3968,8 @@ legend("bottomright", legend = "Courbe d'ajustement y = log(1+x^10)", col = "red
 La fonction obtenue avec régression multiple, semble mieux s'ajuster à notre courbe de diffusion linguistique.
 
 Pour conclure, cette appoche permet de mettre en lumière le fait que la distance géographique joue un rôle assez important dans la répartition des dialectes.
+
+___
 
 # Conclusion {.tabset}
 

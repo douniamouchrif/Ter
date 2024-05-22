@@ -118,6 +118,24 @@ ui <- fluidPage(
              p("Nos observations révèlent une modification significative dans la composition des clusters lorsque les accents sont pas pris en compte, et ce, pour toutes les valeurs de k (ne mobre de custers). Cette constatation suggère que la présence ou l'absence d'accents peut avoir une influence substantielle sur l'organisation des clusters et, par extension, sur la similarité entre les dialectes étudiés. Cette variation soulève la question de l'ampleur du changement dans l'organisation des clusters et son impact sur la représentation des données linguistiques."),
     ),
     
+    tabPanel("Analyse des clusters",
+             p("Nous cherchons à comprendre la répartition des données dans les différents clusters générés par la méthode KNN mentionnée précédemment. Pour ce faire, nous allons générer des matrices pour caractériser les mots dans notre corpus de données. Ces matrices captureront diverses propriétés linguistiques telles que l'orthographe, la terminaison et le début des mots."),
+             h3("Creation des matrices"),
+             p("Chaque fonction est conçue pour extraire une caractéristique spécifique des mots, telles que leur orthographe, leur terminaison ou leur début. Une fois appliquées à chaque mot, ces fonctions génèrent une série de valeurs qui sont ensuite organisées dans une matrice."),
+             p("Par exemple, si nous voulons caractériser les mots en fonction de leur orthographe finale, nous pourrions créer une fonction qui identifie la dernière lettre de chaque mot. Cette fonction serait ensuite appliquée à chaque mot de notre cadre de données, et les résultats seraient stockés dans une colonne de la matrice, où chaque ligne représente un mot."),
+             p("De manière similaire, d'autres fonctions pourraient être créées pour capturer d'autres aspects des mots, tels que leur début (par exemple, si un mot se termine par 'é', 'e', 'i', etc.), leurs terminaisons, ou toute autre caractéristique linguistique pertinente."),
+             p("Une fois que toutes les fonctions ont été appliquées et que les résultats ont été regroupés dans une matrice, nous obtenons une représentation structurée des mots, où chaque ligne correspond à un mot et chaque colonne représente une caractéristique spécifique du mot."),
+             p("Nous utilisont ensuite la fonction catdes pour générer des descripteurs catégoriels à partir des caractéristiques extraites des mots sur l'ensemble des clusters crées dans la partie précédente, en prenant en compte les accents ou non, et pour des valeurs de k égales à 4, 5 et 7 pour la méthode KNN."),
+             p("Pour analyser ces résultats, nous examinons les valeurs de p-value et du test de Chi-Carré pour confirmer la significativité de ces associations. Une faible p-value indique une différence statistiquement significative entre les clusters, tandis que des valeurs élevées de v-test suggèrent une forte association entre une catégorie spécifique et un cluster particulier."),
+             sidebarPanel(
+               selectInput("accents_knn", "Accents",
+                           choices = c("Avec" = "Avec", "Sans" = "Sans")),
+               sliderInput("k_value_knn", "Nombre de clusters :", value = 4, min = 2, max = 10, step = 1)
+             ),
+             
+             
+    ),
+    
     tabPanel("CAH",
              h2("Classification Ascendante Hiérarchique (CAH)"),
              p("La classification ascendante hiérarchique (CAH) est une méthode de clustering qui construit une hiérarchie en regroupant progressivement les points de données les plus similaires, en commençant par chaque point comme un cluster individuel jusqu'à former un seul cluster qui englobe tous les points."),
