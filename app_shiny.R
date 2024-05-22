@@ -6,6 +6,13 @@ library(stringi)
 library(plotly)
 library(dendextend)
 
+rsconnect::setAccountInfo(name='terproject',
+                          token='6ECFF32A0717B46B965CBB02267D2635',
+                          secret='1g+Xf75508AznBtHAo/U2h9RzVLbgjooRvjukj/3')
+
+library(rsconnect)
+rsconnect::deployApp(repo = "https://github.com/douniamouchrif/Ter.git")
+
 # Données
 mots <- read.csv("bdd_grande.csv", sep=";")
 g_data <- mots

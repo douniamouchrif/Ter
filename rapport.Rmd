@@ -55,6 +55,7 @@ local({
 
 ```{r, include=FALSE}
 g_data <- read.csv("bdd_grande.csv", header = TRUE, sep = ";")
+mots <- read.csv("bdd_grande.csv", header = TRUE, sep = ";")
 departements <- st_read("departements.geojson")
 rivers <- st_read("rivers.geojson")
 rivers_lines <- rivers[st_geometry_type(rivers) == "LINESTRING" | st_geometry_type(rivers) == "MULTILINESTRING",]
@@ -1064,11 +1065,6 @@ Par la suite, nous nous sommes intéressées à la question suivante : existe-t-
 
 # KNN {.tabset}
 
-```{r}
-mots <- read.csv("bdd_grande.csv", header = TRUE, sep = ";")
-```
-
-
 Nous souhaitons obtenir des clusters en utilisant la méthode KNN (Méthode des K plus proches voisins) sur l'ensemble des données disponibles. Comme les variables que nous souhaitons utiliser pour le KNN sont toutes des variables qualitatives (elles stockent différentes traductions pour chaque mot), nous devrons tout d'abord utiliser l'ACM (Analyse des Correspondances Multiples). L'ACM est une méthode statistique conçue spécifiquement pour analyser des données catégorielles ou qualitatives. Elle permet d'explorer les relations entre les modalités de différentes variables catégorielles dans un ensemble de données, et de déterminer des distances de similarité ou de dissimilarité entre les modalités. Dans notre cas, l'ACM permet d'analyser la similarité et la dissimilarité entre chaque mot disponible dans chaque colonne et d'observer si les mots se rassemblent, tout en prenant en compte toutes les variables disponibles pour chaque donnée.
 
 Une fois que les données ont été analysées pour comprendre les relations entre les variables à l'aide de l'ACM, nous pouvons utiliser l'algorithme kNN pour effectuer la classification. L'algorithme kNN est une méthode de classification supervisée utilisée pour attribuer une classe à un nouvel échantillon en se basant sur les classes des échantillons voisins dans l'espace des caractéristiques et donc sur les distances entre chaque donnée obtenue grâce à l'ACM.
@@ -1105,8 +1101,8 @@ Sur ce graphique, nous constatons que le nombre optimal de clusters est 5, 7 et 
 
 ```{r}
 k = 4
-clusters <- kmeans(acm_with_act$ind$coord, centers = k)
-g_data$cluster <- clusters$cluster
+clusters_act_4 <- kmeans(acm_with_act$ind$coord, centers = k)
+g_data$cluster <- clusters_act_4$cluster
 
 palette_couleurs <- function(cluster) {
   couleurs <- my_col_4
@@ -1132,7 +1128,7 @@ leaflet() %>%
 Taille de chaque cluster :
 
 ```{r}
-table(clusters$cluster)
+table(clusters_act_4$cluster)
 ```
 
 Les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
@@ -1257,8 +1253,8 @@ resultats
 
 ```{r}
 k = 7
-clusters <- kmeans(acm_with_act$ind$coord, centers = k)
-g_data$cluster <- clusters$cluster
+clusters_act_7 <- kmeans(acm_with_act$ind$coord, centers = k)
+g_data$cluster <- clusters_act_7$cluster
 
 palette_couleurs <- function(cluster) {
   couleurs <- my_col_7
@@ -1283,7 +1279,7 @@ leaflet() %>%
 Taille de chaque cluster :
 
 ```{r}
-table(clusters$cluster)
+table(clusters_act_7$cluster)
 ```
 
 Nous nous intéressons à savoir pourquoi le cluster numéro 3 et le cluster numéro 5 contiennent respectivement 3 et une seule commune.
@@ -1300,7 +1296,7 @@ cluster_3_data
 
 Dans la partie suivante de notre analyse, nous allons plonger plus en profondeur pour comprendre pourquoi ces clusters ont été formés. Nous allons examiner les caractéristiques linguistiques spécifiques, (telles que les préfixes, les suffixes, etc), qui peuvent avoir contribué à la formation de ces groupes de communes.
 
-Nous observerons que le cluster numéro 2 contient qu'un seul élément et nous souhaitons étudier pourquoi cette commune se retrouve seule. Pour ce faire, nous allons voir si les traductions de chaque mot pour cette commune sont uniques par rapport à toutes les autres communes disponibles dans notre étude.
+Nous observerons que le cluster numéro 5 contient qu'un seul élément et nous souhaitons étudier pourquoi cette commune se retrouve seule. Pour ce faire, nous allons voir si les traductions de chaque mot pour cette commune sont uniques par rapport à toutes les autres communes disponibles dans notre étude.
 
 Nous allons maintenant nous intéresser à la raison pour laquelle le cluster 5 ne contient qu'une seule commune. Nous pourrions examiner si cette commune possède des traductions qui ne se retrouvent pas dans les autres communes, ce qui pourrait expliquer pourquoi elle est séparée des autres dans un cluster distinct.
 
@@ -1316,7 +1312,7 @@ On va vérifier si les traductions sont uniques par rapport à toutes les autres
 ```{r}
 verifier_presence_colonne <- function(colonne_donnees) {
   colonne_donnees[is.na(colonne_donnees)] <- ""
-  presence <- colonne_donnees %in% mots[[colonne_donnees]]
+  presence <- colonne_donnees %in% g_data[[colonne_donnees]]
   return(presence)
 }
 ```
@@ -1388,7 +1384,6 @@ Nous allons modifier tous les mots en enlevant les accents pour observer si nous
 Nous allons à nouveau utiliser la méthode du "coude", mais cette fois-ci sur les mots après avoir enlevé les accents au niveau de l'écriture.
 
 ```{r}
-g_data <- data.frame(mots)
 # Enlever les accents et les caractères diacritiques
 remove_accents_and_diacritics <- function(text) {
   # Supprimer les accents
@@ -1424,8 +1419,8 @@ On retrouve que le nombre optimal de clusters avec la méthode KNN sur ces donn�
 
 ```{r}
 k = 4
-clusters <- kmeans(acm_with_out_act$ind$coord, centers = k)
-g_data$cluster <- clusters$cluster
+clusters_no_act_4 <- kmeans(acm_with_out_act$ind$coord, centers = k)
+g_data$cluster <- clusters_no_act_4$cluster
 
 palette_couleurs <- function(cluster) {
   couleurs <- my_col_4
@@ -1446,10 +1441,11 @@ leaflet() %>%
   addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
   addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
 ```
+
 Taille de chaque cluster :
 
 ```{r}
-table(clusters$cluster)
+table(clusters_no_act_4$cluster)
 ```
 
 Les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
@@ -1496,15 +1492,15 @@ resultats
 
 ```{r}
 k = 5
-clusters_not_act_5 <- kmeans(acm_with_out_act$ind$coord, centers = k)
-g_data$cluster <- clusters_not_act_5$cluster
+clusters_no_act_5 <- kmeans(acm_with_out_act$ind$coord, centers = k)
+g_data$cluster <- clusters_no_act_5$cluster
 
 palette_couleurs <- function(cluster) {
   couleurs <- my_col_5
   return(couleurs[cluster])
 }
 
-clusters_not_act_5_vecteur <- clusters_not_act_5$cluster
+clusters_not_act_5_vecteur <- clusters_no_act_5$cluster
 clusters_uniques_triés <- sort(unique(g_data$cluster))
 
 leaflet() %>%
@@ -1524,7 +1520,7 @@ leaflet() %>%
 Taille de chaque cluster :
 
 ```{r}
-table(clusters_not_act_5$cluster)
+table(clusters_no_act_5$cluster)
 ```
 
 Les deux modalités avec le plus grand nombre d'occurrences pour chaque variable et cluster :
@@ -1571,8 +1567,8 @@ resultats
 
 ```{r}
 k = 7
-clusters <- kmeans(acm_with_out_act$ind$coord, centers = k)
-g_data$cluster <- clusters$cluster
+clusters_no_act_7 <- kmeans(acm_with_out_act$ind$coord, centers = k)
+g_data$cluster <- clusters_no_act_7$cluster
 
 palette_couleurs <- function(cluster) {
   couleurs <- my_col_7
@@ -1597,7 +1593,7 @@ leaflet() %>%
 Taille de chaque cluster :
 
 ```{r}
-table(clusters$cluster)
+table(clusters_no_act_7$cluster)
 ```
 
 Nous observerons que le cluster numéro 2 contient qu'un seul élément et nous souhaitons étudier pourquoi cette commune se retrouve seule. Pour ce faire, nous allons voir si les traductions de chaque mot pour cette commune sont uniques par rapport à toutes les autres communes disponibles dans notre étude.
@@ -1685,11 +1681,1534 @@ resultats
 
 # Analyse des clusters
 
-Nous constatons que lorsque nous enlevons les accents, la composition des quatre clusters change de manière plus ou moins considérable. Cela suggère que la présence ou l'absence d'accents peut influencer l'organisation des clusters et donc la similarité entre les dialectes. Nous nous demanderons alors dans quelle mesure cette organisation des clusters change. Ainsi, nous nous intéressons de plus près aux caractéristiques qui peuvent influencer la création de ces clusters.
+Nous constatons que lorsque nous enlevons les accents, la composition des quatre clusters change de manière plus ou moins considérable. Cela suggère que la présence ou l'absence d'accents peut influencer l'organisation des clusters et donc la similarité entre les dialectes. Nous nous demanderons alors dans quelle mesure cette organisation des clusters change.
 
 ___
 
-**[PARTIE Matrices]**
+# Création de matrices sur quelques mots choisis {.tabset}
+
+Nous cherchons à comprendre la répartition des données dans les différents clusters générés par la méthode KNN mentionnée précédemment. Pour ce faire, nous allons générer des matrices pour caractériser les mots dans notre corpus de données. Ces matrices captureront diverses propriétés linguistiques telles que l'orthographe, la terminaison et le début des mots.
+
+**Creation des matrices** 
+
+Chaque fonction est conçue pour extraire une caractéristique spécifique des mots, telles que leur orthographe, leur terminaison ou leur début. Une fois appliquées à chaque mot, ces fonctions génèrent une série de valeurs qui sont ensuite organisées dans une matrice.
+
+Par exemple, si nous voulons caractériser les mots en fonction de leur orthographe finale, nous pourrions créer une fonction qui identifie la dernière lettre de chaque mot. Cette fonction serait ensuite appliquée à chaque mot de notre cadre de données, et les résultats seraient stockés dans une colonne de la matrice, où chaque ligne représente un mot.
+
+De manière similaire, d'autres fonctions pourraient être créées pour capturer d'autres aspects des mots, tels que leur début (par exemple, si un mot se termine par "é", "e", "i", etc.), leurs terminaisons, ou toute autre caractéristique linguistique pertinente.
+
+Une fois que toutes les fonctions ont été appliquées et que les résultats ont été regroupés dans une matrice, nous obtenons une représentation structurée des mots, où chaque ligne correspond à un mot et chaque colonne représente une caractéristique spécifique du mot.
+
+Nous utilisont ensuite la fonction **catdes** pour générer des descripteurs catégoriels à partir des caractéristiques extraites des mots sur l'ensemble des clusters crées dans la partie précédente, en prenant en compte les accents ou non, et pour des valeurs de k égales à 4, 5 et 7 pour la méthode KNN.
+
+Pour analyser ces résultats, nous examinons les valeurs de p-value et du test de Chi-Carré pour confirmer la significativité de ces associations. Une faible p-value indique une différence statistiquement significative entre les clusters, tandis que des valeurs élevées de v-test suggèrent une forte association entre une catégorie spécifique et un cluster particulier.
+
+## Avec les accents {.tabset}
+
+### 4 clusters {.tabset}
+
+Matrice des distances à partir de l'ACM et de la méthode KNN avec 4 clusters en prenant en compte les accents.
+
+```{r}
+coords_individus <- acm_with_act$ind$coord
+
+distance_matrix_act_4 <- dist(coords_individus, method = "euclidean")
+distance_matrix_act_4 <- as.matrix(distance_matrix_act_4)
+groups <- knn(coords_individus, coords_individus, clusters_act_4$cluster, k = 4)
+```
+
+#### Mot "homme" ...
+
+##### ... finissant par "é", "e", "i" ou NA
+```{r}
+mots_éei <- function(mot) {
+  res <- rep("autres", length(mot))
+  res[grep("é$", mot)] <- "é"
+  res[grep("e$", mot)] <- "e"
+  res[grep("i$", mot)] <- "i"
+  return(res)
+}
+
+mot_hommes<- mots$HOMME_Mot
+res_homme_éei <- sapply(mot_hommes, mots_éei)
+tab_homme_éei <- data.frame(Finit_par_éei = res_homme_éei)
+
+tab_homme_éei$partition <- as.factor(groups)
+catdes(tab_homme_éei, num.var = 2)
+```
+
+Le test de chi-carré montre une p-value de 0 pour la variable "Finit_par_éei" avec 9 degrés de liberté. Cela indique une association statistiquement significative entre cette variable et les clusters. 
+
+- **Cluster 1** : dominé par les mots se terminant par "e" (89.35%). Les mots se terminant par "i" et "autres" sont sous-représentés
+- **Cluster 2** : principalement constitué de mots se terminant par "i" (60.07%). Les mots se terminant par "e" et "autres" sont sous-représentés
+- **Cluster 3** : comprend également une forte proportion de mots se terminant par "i" (37.15%), mais moins fortement que le cluster 2. Les mots se terminant par "e" et "autres" sont sous-représentés
+- **Cluster 4** : majoritairement composé de mots avec des terminaisons "autres" (63.27%), suivi par ceux se terminant par "é" (17.31%). Les mots se terminant par "e" et "i" sont sous-représentés
+
+Ces clusters montrent clairement que la terminaison des mots est un facteur clé de différenciation dans la creation des clusters.
+
+#### Mot "fils", "fit", "faisant", "fier" et "femme" ...
+
+##### ... commençant par "h", "f" ou NA
+```{r}
+mots_fh <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^f", mot)] <- "f"
+  res[grep("^h", mot)] <- "h"
+  return(res)
+}
+
+mot_fils <- g_data$FILS_Mot
+res_fils_fh <- sapply(mot_fils, mots_fh)
+tab_fils_fh <- data.frame(Commence_par_fh = res_fils_fh)
+
+tab_fils_fh$partition <- as.factor(groups)
+catdes(tab_fils_fh, num.var = 2)
+
+mot_fit <- g_data$FIT_Mot
+res_fit_fh <- sapply(mot_fit, mots_fh)
+tab_fit_fh <- data.frame(Commence_par_fh = res_fit_fh)
+
+tab_fit_fh$partition <- as.factor(groups)
+catdes(tab_fit_fh, num.var = 2)
+
+mot_faisant <- g_data$FAISANT_Mot
+res_faisant_fh <- sapply(mot_faisant, mots_fh)
+tab_faisant_fh <- data.frame(Commence_par_fh = res_faisant_fh)
+
+tab_faisant_fh$partition <- as.factor(groups)
+catdes(tab_faisant_fh, num.var = 2)
+
+mot_fier <- g_data$FIER_Mot
+res_fier_fh <- sapply(mot_fier, mots_fh)
+tab_fier_fh <- data.frame(Commence_par_fh = res_fier_fh)
+
+tab_fier_fh$partition <- as.factor(groups)
+catdes(tab_fier_fh, num.var = 2)
+
+mot_femme <- g_data$FEMME_Mot
+res_femme_fh <- sapply(mot_femme, mots_fh)
+tab_femme_fh <- data.frame(Commence_par_fh = res_femme_fh)
+
+tab_femme_fh$partition <- as.factor(groups)
+catdes(tab_femme_fh, num.var = 2)
+```
+
+Nous observons des associations significatives entre la première lettre des mots et les clusters formés. Le test de chi-carré avec un p-value de 0 montre une association statistiquement très significative entre les clusters et la première lettre des mots, avec des v-tests allant de 10.76 à 34.30 pour les surreprésentations et de -9.95 à -35.24 pour les sous-représentations.
+
+- **Cluster 1** : dominé par les mots commençant par une lettre autre que "f" ou "h" (90.83%). Les mots commençant par "f" (49.93%) sont également surreprésentés, tandis que ceux commençant par "h" sont sous-représentés (8.35%)
+- **Cluster 2** : principalement constitué de mots commençant par "h" (55.66%). Les mots commençant par une lettre autre que "f" ou "h" (5.04%) et ceux commençant par "f" (0.40%) sont sous-représentés
+- **Cluster 3** : comprend également une forte proportion de mots commençant par "h" (35.98%), mais moins fortement que le cluster 2. les mots commençant par une lettre autre que "f" ou "h" (2.34%) et ceux commençant par "f" (0.13%) sont sous-représentés
+- **Cluster 4** : majoritairement composé de mots commençant par "f" (49.54%). Les mots commençant par une lettre autre que "f" ou "h" (1.80%) et ceux commençant par "h" (0.00%) sont sous-représentés
+
+Ces clusters montrent que la première lettre des mots est un facteur clé de différenciation entre les clusters.
+
+#### Mot "donnez" ...
+
+##### ... commençant par "ba", "do", "da" ou NA
+```{r}
+mots_badoda <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^ba", mot)] <- "ba"
+  res[grep("^do", mot)] <- "do"
+  res[grep("^da", mot)] <- "da"
+  return(res)
+}
+
+mot_donnez <- mots$DONNEZ_Mot
+res_donnez_badoda <- sapply(mot_donnez, mots_badoda)
+tab_donnez_badoda <- data.frame(Commence_par_badoda = res_donnez_badoda)
+
+tab_donnez_badoda$partition <- as.factor(groups)
+catdes(tab_donnez_badoda, num.var = 2)
+```
+
+Dans ce cas le test de chi-carré montre une association statistiquement très significative entre les clusters et les mots commençant par "ba", "do", "da" ou autre, avec un p-value de 0. Nous avons la composition suivante des clusters :
+
+**Cluster 1**
+- Surreprésenté par les mots commençant par "do" (v-test = 32.64)
+- Sous-représenté par les mots commençant par "ba" (v-test = -16.66) et "da" (v-test = -23.50)
+
+**Cluster 2**
+- Surreprésenté par les mots commençant par "ba" (v-test = 32.70)
+- Sous-représenté par les mots commençant par "do" (v-test = -32.02) et légèrement par "da" (v-test = -3.39)
+
+**Cluster 3**
+- Surreprésenté par les mots commençant par "da" (v-test = 31.99) et d'autres lettres (v-test = 3.84)
+- Sous-représenté par les mots commençant par "ba" (v-test = -5.68) et "do" (v-test = -27.43)
+
+**Cluster 4**
+- Surreprésenté par les mots commençant par "do" (v-test = 25.82)
+- Sous-représenté par les mots commençant par "ba" (v-test = -18.28) et "da" (v-test = -13.19)
+
+#### Mot "égales" ...
+
+#### ... finissant par "os", "es", "as" ou NA
+```{r}
+mots_osesas <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("os$", mot)] <- "os"
+  res[grep("es$", mot)] <- "es"
+  res[grep("as$", mot)] <- "as"
+  return(res)
+}
+
+mot_egales <- mots$EGALES_Mot
+res_egales_osesas <- sapply(mot_egales, mots_osesas)
+tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
+
+tab_egales_osesas$partition <- as.factor(groups)
+catdes(tab_egales_osesas, num.var = 2)
+```
+
+Le test de chi-carré montre une association statistiquement très significative entre les clusters et les mots qui se finisent par "as", "os", "es" ou autres, avec un p-value de $1.41 \times 10^{-294}$. On a la composition suivant pour les clusters :
+
+**Cluster 1**
+- Surreprésenté par les mots finissant par "es" (v-test = 7.90)
+- Sous-représenté par les mots finissant par "as" (v-test = -15.85)
+
+**Cluster 2**
+- Surreprésenté par les mots finissant par "es" (v-test = 11.51) et "os" (v-test = 5.52)
+- Sous-représenté par les mots finissant par "as" (v-test = -13.45) et d'autres lettres (v-test = -14.85)
+
+**Cluster 3**
+- Surreprésenté par les mots finissant par "as" (v-test = 10.03) et "os" (v-test = 3.68)
+- Sous-représenté par les mots finissant par "es" (v-test = -10.79)
+
+**Cluster 4**
+- Surreprésenté par les mots finissant par "as" (v-test = 17.84) et d'autres lettres (v-test = 17.07)
+- Sous-représenté par les mots finissant par "os" (v-test = -14.01) et "es" (v-test = -18.04)
+
+Le Cluster 1 est fortement associé aux mots se terminant par "es", tandis que le Cluster 4 est associé aux mots se terminant par "as" et d'autres terminaisons.
+
+#### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
+
+##### ... commençant par "v", "b" ou NA
+```{r}
+mots_vb <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^v", mot)] <- "v"
+  res[grep("^b", mot)] <- "b"
+  return(res)
+}
+
+mot_village <- mots$VILLAGE_Mot
+res_village_vb <- sapply(mot_village, mots_vb)
+tab_village_vb <- data.frame(Commence_par_vb = res_village_vb)
+
+tab_village_vb$partition <- as.factor(groups)
+catdes(tab_village_vb, num.var = 2)
+
+mot_ville <- mots$VILLE_Mot
+res_ville_vb <- sapply(mot_ville, mots_vb)
+tab_ville_vb <- data.frame(Commence_par_vb = res_ville_vb)
+
+tab_ville_vb$partition <- as.factor(groups)
+catdes(tab_ville_vb, num.var = 2)
+
+mot_vendre <- mots$VENDRE_Mot
+res_vendre_vb <- sapply(mot_vendre, mots_vb)
+tab_vendre_vb <- data.frame(Commence_par_vb = res_vendre_vb)
+
+tab_vendre_vb$partition <- as.factor(groups)
+catdes(tab_vendre_vb, num.var = 2)
+
+mot_vieille <- mots$VIEILLE_Mot
+res_vieille_vb <- sapply(mot_vieille, mots_vb)
+tab_vieille_vb <- data.frame(Commence_par_vb = res_vieille_vb)
+
+tab_vieille_vb$partition <- as.factor(groups)
+catdes(tab_vieille_vb, num.var = 2)
+
+mot_valet <- mots$VALET_Mot
+res_valet_vb <- sapply(mot_valet, mots_vb)
+tab_valet_vb <- data.frame(Commence_par_vb = res_valet_vb)
+
+tab_valet_vb$partition <- as.factor(groups)
+catdes(tab_valet_vb, num.var = 2)
+```
+
+Le test de chi-carré montre une association statistiquement significative entre les clusters et les mots commencent par "v" ou "b", avec un p-value de 0.
+
+**Cluster 1**
+- Surreprésenté par les mots commençant par "b" (v-test = 14.22)
+- Sous-représenté par les mots commençant par d'autres lettres (v-test = -7.75) et "v" (v-test = -11.52)
+
+**Cluster 2**
+- Surreprésenté par les mots commençant par d'autres lettres (v-test = 12.13) et "b" (v-test = 7.47)
+- Sous-représenté par les mots commençant par "v" (v-test = -18.68)
+
+**Cluster 3**
+- Surreprésenté par les mots commençant par "b" (v-test = 13.90)
+- Sous-représenté par les mots commençant par d'autres lettres (v-test = -3.81) et "v" (v-test = -13.91)
+
+**Cluster 4**
+- Surreprésenté par les mots commençant par "v" (v-test = Inf)
+- Sous-représenté par les mots commençant par "b" (v-test = -37.99) et d'autres lettres (v-test = -4.37)
+
+Le Cluster 1 est fortement associé aux mots commençant par "b", tandis que le Cluster 4 est associé aux mots commençant par "v".
+
+#### Mot "un" ...
+
+##### ... avec un "n" ou non (NA)
+```{r}
+mots_n <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grepl("n", mot)] <- "n"
+  return(res)
+}
+
+mot_un <- mots$UN_Mot
+res_un_n <- sapply(mot_un, mots_n)
+tab_un_n <- data.frame(Contient_un_n = res_un_n)
+
+tab_un_n$partition <- as.factor(groups)
+catdes(tab_un_n, num.var = 2)
+```
+
+Le test de chi-carré révèle une association statistiquement très significative entre les clusters et les mots qui contiennent la lettre "n" ou non, avec un p-value de 0.
+
+**Cluster 1**
+- Présente une forte concentration de mots contenant la lettre "n" (v-test = 28.30)
+- Sous-représentation significative des mots n'incluant pas la lettre "n"
+
+**Cluster 2**
+- Également une forte concentration de mots contenant la lettre "n" (v-test = 3.50), mais moins prononcée que dans le Cluster 1
+- Légère sous-représentation des mots n'incluant pas la lettre "n"
+
+**Cluster 3**
+- Mots presque exclusivement composés de mots contenant la lettre "n" (v-test = Inf)
+- Aucun mot du cluster ne contient la lettre "n"
+
+**Cluster 4**
+- Forte concentration de mots contenant la lettre "n" (v-test = 15.47)
+- Sous-représentation significative des mots n'incluant pas la lettre "n"
+
+Les clusters 1 et 4 sont particulièrement caractérisés par la présence de cette lettre, tandis que le cluster 3 en est dépourvu.
+
+### 5 clusters {.tabset}
+
+Matrice des distances à partir de l'ACM et de la méthode KNN avec 5 clusters en prenant en compte les accents.
+
+```{r}
+coords_individus <- acm_with_act$ind$coord
+
+distance_matrix_act_5 <- dist(coords_individus, method = "euclidean")
+distance_matrix_act_5 <- as.matrix(distance_matrix_act_5)
+groups <- knn(coords_individus, coords_individus, clusters_act_5$cluster, k = 5)
+```
+
+#### Mot "homme" ...
+
+##### ... finissant par "é", "e", "i" ou NA
+```{r}
+mots_éei <- function(mot) {
+  res <- rep("autres", length(mot))
+  res[grep("é$", mot)] <- "é"
+  res[grep("e$", mot)] <- "e"
+  res[grep("i$", mot)] <- "i"
+  return(res)
+}
+
+mot_hommes<- mots$HOMME_Mot
+res_homme_éei <- sapply(mot_hommes, mots_éei)
+tab_homme_éei <- data.frame(Finit_par_éei = res_homme_éei)
+
+tab_homme_éei$partition <- as.factor(groups)
+catdes(tab_homme_éei, num.var = 2)
+```
+
+Le test de chi-carré indique une association statistiquement significative entre les clusters et les mots se finissent par "e", "i" ou "é", avec une p-value de 0.
+
+**Cluster 1**
+- Présente une forte concentration de mots se terminant par "é" (v-test = 14.56)
+- Sous-représentation significative des mots se terminant par "e" et "i"
+
+**Cluster 2**
+- Présente une forte concentration de mots se terminant par "i" (v-test = 28.17)
+- Sous-représentation significative des mots se terminant par "é", "e" et d'autres lettres
+
+**Cluster 3**
+- Présente une forte concentration de mots se terminant par "autres" (v-test = 16.96)
+- Sous-représentation significative des mots se terminant par "e" et "i"
+
+**Cluster 4**
+- Présente une forte concentration de mots se terminant par "é" (v-test = 16.78)
+- Sous-représentation significative des mots se terminant par "e", "i" et d'autres lettres
+
+**Cluster 5**
+- Présente une forte concentration de mots se terminant par "e" (v-test = 37.96)
+- Sous-représentation significative des mots se terminant par "i", "é" et d'autres lettres
+
+Chaque cluster semble être caractérisé par une terminaison spécifique des mots, ce qui suggère une structure sémantique sous-jacente dans les données.
+
+#### Mot "fils", "fit", "faisant", "fier" et "femme" ...
+
+##### ... commençant par "h", "f" ou NA
+```{r}
+mots_fh <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^f", mot)] <- "f"
+  res[grep("^h", mot)] <- "h"
+  return(res)
+}
+
+mot_fils <- g_data$FILS_Mot
+res_fils_fh <- sapply(mot_fils, mots_fh)
+tab_fils_fh <- data.frame(Commence_par_fh = res_fils_fh)
+
+tab_fils_fh$partition <- as.factor(groups)
+catdes(tab_fils_fh, num.var = 2)
+
+mot_fit <- g_data$FIT_Mot
+res_fit_fh <- sapply(mot_fit, mots_fh)
+tab_fit_fh <- data.frame(Commence_par_fh = res_fit_fh)
+
+tab_fit_fh$partition <- as.factor(groups)
+catdes(tab_fit_fh, num.var = 2)
+
+mot_faisant <- g_data$FAISANT_Mot
+res_faisant_fh <- sapply(mot_faisant, mots_fh)
+tab_faisant_fh <- data.frame(Commence_par_fh = res_faisant_fh)
+
+tab_faisant_fh$partition <- as.factor(groups)
+catdes(tab_faisant_fh, num.var = 2)
+
+mot_fier <- g_data$FIER_Mot
+res_fier_fh <- sapply(mot_fier, mots_fh)
+tab_fier_fh <- data.frame(Commence_par_fh = res_fier_fh)
+
+tab_fier_fh$partition <- as.factor(groups)
+catdes(tab_fier_fh, num.var = 2)
+
+mot_femme <- g_data$FEMME_Mot
+res_femme_fh <- sapply(mot_femme, mots_fh)
+tab_femme_fh <- data.frame(Commence_par_fh = res_femme_fh)
+
+tab_femme_fh$partition <- as.factor(groups)
+catdes(tab_femme_fh, num.var = 2)
+```
+
+Le test de chi-carré indique une association statistiquement significative entre les clusters et les mots commencent par la lettre "f", "h" ou autres, avec une p-value de 0 dans chaque cas.
+
+**Cluster 1**
+- Forte concentration de mots commençant par "f" (v-test = 22.51)
+- Sous-représentation significative des mots commençant par d'autres lettres et "h"
+
+**Cluster 2**
+- Forte concentration de mots commençant par "h" (v-test = Inf).
+- Sous-représentation significative des mots commençant par d'autres lettres et "f"
+
+**Cluster 3**
+- Forte concentration de mots commençant par "f" (v-test = 25.00).
+- Sous-représentation significative des mots commençant par d'autres lettres et "h"
+
+**Cluster 4**
+- Forte concentration de mots commençant par "f" (v-test = 26.74).
+- Sous-représentation significative des mots commençant par d'autres lettres et "h"
+
+**Cluster 5**
+- Forte concentration de mots commençant par "autre" (v-test = 27.77).
+- Sous-représentation significative des mots commençant par "h" et "f"
+
+Chaque cluster semble être caractérisé par une initiation spécifique des mots, ce qui suggère une structure sémantique sous-jacente dans les données.
+
+#### Mot "donnez" ...
+
+##### ... commençant par "ba", "do", "da" ou NA
+```{r}
+mots_badoda <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^ba", mot)] <- "ba"
+  res[grep("^do", mot)] <- "do"
+  res[grep("^da", mot)] <- "da"
+  return(res)
+}
+
+mot_donnez <- mots$DONNEZ_Mot
+res_donnez_badoda <- sapply(mot_donnez, mots_badoda)
+tab_donnez_badoda <- data.frame(Commence_par_badoda = res_donnez_badoda)
+
+tab_donnez_badoda$partition <- as.factor(groups)
+catdes(tab_donnez_badoda, num.var = 2)
+```
+
+Les résultats de l'analyse suggèrent que les mots commençant par **ba, do ou da** influencent de manière significative la formation des clusters. Chaque cluster semble avoir une composition distincte en fonction de préfixes mots.
+
+Par exemple, dans le cluster 3, les mots commençant par **da** sont fortement prédominants (100% Cla/Mod), ce qui suggère une forte association entre ces mots et ce cluster. En revanche, dans le cluster 4, aucun mot ne commence par **da** (0% Cla/Mod), indiquant une association négative entre cette catégorie et ce cluster.
+
+En résumé, cette analyse révèle que les mots qui commencent par **ba, do ou da** joue un rôle important dans la formation des clusters et peut être utilisée pour comprendre les caractéristiques distinctives de chaque groupe dans l'ensemble de données.
+
+#### Mot "égales" ...
+
+##### ... finissant par "os", "es", "as" ou NA
+```{r}
+mots_osesas <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("os$", mot)] <- "os"
+  res[grep("es$", mot)] <- "es"
+  res[grep("as$", mot)] <- "as"
+  return(res)
+}
+
+mot_egales <- mots$EGALES_Mot
+res_egales_osesas <- sapply(mot_egales, mots_osesas)
+tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
+
+tab_egales_osesas$partition <- as.factor(groups)
+catdes(tab_egales_osesas, num.var = 2)
+```
+
+Le test du chi-carré révèle une association statistiquement très significative entre les clusters et les mots se terminant par "as", "os", "es", ou autres, avec un p-value remarquable de $$1.41 \times 10^{-294}$$. On a la composition de chaque cluster :
+
+**Cluster 1**
+- Sur-représenté par les mots se terminant par "es" (v-test = 7.90)
+- Sous-représenté par les mots se terminant par "as" (v-test = -15.85)
+
+**Cluster 2**
+- Sur-représenté par les mots se terminant par "es" (v-test = 11.51) et "os" (v-test = 5.52)
+- Sous-représenté par les mots se terminant par "as" (v-test = -13.45) et d'autres lettres (v-test = -14.85)
+
+**Cluster 3**
+- Sur-représenté par les mots se terminant par "as" (v-test = 10.03) et "os" (v-test = 3.68)
+- Sous-représenté par les mots se terminant par "es" (v-test = -10.79)
+
+**Cluster 4**
+- Sur-représenté par les mots se terminant par "as" (v-test = 17.84) et d'autres lettres (v-test = 17.07)
+- Sous-représenté par les mots se terminant par "os" (v-test = -14.01) et "es" (v-test = -18.04)
+
+Le Cluster 1 est fortement associé aux mots se terminant par "es", tandis que le Cluster 4 est associé aux mots se terminant par "as" et d'autres terminaisons.
+
+#### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
+
+##### ... commençant par "v", "b" ou NA
+```{r}
+mots_vb <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^v", mot)] <- "v"
+  res[grep("^b", mot)] <- "b"
+  return(res)
+}
+
+mot_village <- mots$VILLAGE_Mot
+res_village_vb <- sapply(mot_village, mots_vb)
+tab_village_vb <- data.frame(Commence_par_vb = res_village_vb)
+
+tab_village_vb$partition <- as.factor(groups)
+catdes(tab_village_vb, num.var = 2)
+
+mot_ville <- mots$VILLE_Mot
+res_ville_vb <- sapply(mot_ville, mots_vb)
+tab_ville_vb <- data.frame(Commence_par_vb = res_ville_vb)
+
+tab_ville_vb$partition <- as.factor(groups)
+catdes(tab_ville_vb, num.var = 2)
+
+mot_vendre <- mots$VENDRE_Mot
+res_vendre_vb <- sapply(mot_vendre, mots_vb)
+tab_vendre_vb <- data.frame(Commence_par_vb = res_vendre_vb)
+
+tab_vendre_vb$partition <- as.factor(groups)
+catdes(tab_vendre_vb, num.var = 2)
+
+mot_vieille <- mots$VIEILLE_Mot
+res_vieille_vb <- sapply(mot_vieille, mots_vb)
+tab_vieille_vb <- data.frame(Commence_par_vb = res_vieille_vb)
+
+tab_vieille_vb$partition <- as.factor(groups)
+catdes(tab_vieille_vb, num.var = 2)
+
+mot_valet <- mots$VALET_Mot
+res_valet_vb <- sapply(mot_valet, mots_vb)
+tab_valet_vb <- data.frame(Commence_par_vb = res_valet_vb)
+
+tab_valet_vb$partition <- as.factor(groups)
+catdes(tab_valet_vb, num.var = 2)
+```
+
+Le test du chi-carré indique une association statistiquement très significative entre les clusters et les mots qui commencent par différentes lettres, avec un p-value remarquable de 0. On a la composition de chaque cluster suivante :
+
+**Cluster 1**
+- Sur-représenté par les mots commençant par "v" (v-test = 22.41)
+- Sous-représenté par les mots commençant par "b" (v-test = -21.44)
+
+**Cluster 2**
+- Sur-représenté par les mots commençant par "b" (v-test = 23.15)
+- Sous-représenté par les mots commençant par "v" (v-test = -25.23)
+
+**Cluster 3**
+- Sur-représenté par les mots commençant par "v" (v-test = 30.09)
+- Sous-représenté par les mots commençant par "b" (v-test = -29.50)
+
+**Cluster 4**
+- Sur-représenté par les mots commençant par "b" (v-test = 5.92)
+- Sous-représenté par les mots commençant par "v" (v-test = -6.39)
+
+**Cluster 5**
+- Sur-représenté par les mots commençant par "b" (v-test = 10.46)
+- Sous-représenté par les mots commençant par "v" (v-test = -12.14)
+
+Les mots commençant par "v" dominent le Cluster 1, tandis que les mots commençant par "b" sont plus fréquents dans les Clusters 2, 3, 4, et 5.
+
+#### Mot "un" ...
+
+##### ... avec un "n" ou non (NA)
+```{r}
+mots_n <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grepl("n", mot)] <- "n"
+  return(res)
+}
+
+mot_un <- mots$UN_Mot
+res_un_n <- sapply(mot_un, mots_n)
+tab_un_n <- data.frame(Contient_un_n = res_un_n)
+
+tab_un_n$partition <- as.factor(groups)
+catdes(tab_un_n, num.var = 2)
+```
+
+Le test du chi-carré montre une association statistiquement très significative entre les clusters et la présence ou l'absence du caractère "n" dans les mots, avec un p-value remarquable de $$2.38 \times 10^{-235}$$. La répartition de chaque cluster est la suivante :
+
+**Cluster 1**
+- Sur-représenté par les mots contenant "n" (v-test = 14.00)
+- Sous-représenté par les mots ne contenant pas "n" (v-test = -14.00)
+
+**Cluster 2**
+- Sur-représenté par les mots ne contenant pas "n" (v-test = 37.08)
+- Sous-représenté par les mots contenant "n" (v-test = -37.08)
+
+**Cluster 3**
+- Sur-représenté par les mots contenant "n" (v-test = 11.13)
+- Sous-représenté par les mots ne contenant pas "n" (v-test = -11.13)
+
+**Cluster 4**
+- Sur-représenté par les mots contenant "n" (v-test = 16.92)
+- Sous-représenté par les mots ne contenant pas "n" (v-test = -16.92)
+
+**Cluster 5**
+- Sur-représenté par les mots contenant "n" (v-test = 19.35)
+- Sous-représenté par les mots ne contenant pas "n" (v-test = -19.35)
+
+Cela montre que la présence ou l'absence du caractère "n" dans les mots est un facteur distinctif des clusters identifiés.
+
+### 7 clusters {.tabset}
+
+Matrice des distances à partir de l'ACM et de la méthode KNN avec 7 clusters en prenant en compte les accents.
+
+```{r}
+coords_individus <- acm_with_act$ind$coord
+
+distance_matrix_act_7 <- dist(coords_individus, method = "euclidean")
+distance_matrix_act_7 <- as.matrix(distance_matrix_act_7)
+groups <- knn(coords_individus, coords_individus, clusters_act_7$cluster, k = 7)
+```
+
+#### Mot "homme" ...
+
+##### ... finissant par "é", "e", "i" ou NA
+```{r}
+mots_éei <- function(mot) {
+  res <- rep("autres", length(mot))
+  res[grep("é$", mot)] <- "é"
+  res[grep("e$", mot)] <- "e"
+  res[grep("i$", mot)] <- "i"
+  return(res)
+}
+
+mot_hommes<- mots$HOMME_Mot
+res_homme_éei <- sapply(mot_hommes, mots_éei)
+tab_homme_éei <- data.frame(Finit_par_éei = res_homme_éei)
+
+tab_homme_éei$partition <- as.factor(groups)
+catdes(tab_homme_éei, num.var = 2)
+```
+
+Le test du chi-carré indique une association statistiquement très significative entre les clusters et les mots se terminant par "ée", "é", "i", ou autres, avec une p-value remarquablement faible de 0. La répartition de chaque cluster est la suivante :
+
+Voici la description corrigée de chaque cluster par catégorie :
+
+**Cluster 1**
+- Sur-représenté par les mots se terminant par "autres" (v-test = 16.26)
+- Sous-représenté par les mots se terminant par "é" (v-test = 4.01), "e" (v-test = -7.90), et "i" (v-test = -10.80)
+
+**Cluster 2**
+- Sur-représenté par les mots se terminant par "é" (v-test = 22.60)
+- Sous-représenté par les mots se terminant par "e" (v-test = -7.19), "i" (v-test = -20.22) et d'autres lettres (v-test = -4.10)
+
+**Cluster 3**
+- Aucun résultat
+
+**Cluster 4**
+- Sur-représenté par les mots se terminant par "i" (v-test = 14.29)
+- Sous-représenté par les mots se terminant par "autres" (v-test = -4.80), "e" (v-test = -15.66) et d'autres lettres (v-test = -4.80)
+
+**Cluster 6**
+- Sur-représenté par les mots se terminant par "e" (v-test = Inf)
+- Sous-représenté par les mots se terminant par "autres" (v-test = -4.24), "i" (v-test = -15.06), et "é" (v-test = -21.48)
+
+**Cluster 7**
+- Sur-représenté par les mots se terminant par "i" (v-test = 17.13)
+- Sous-représenté par les mots se terminant par "é" (v-test = -2.82), "autres" (v-test = -3.62), et "e" (v-test = -16.47)
+
+#### Mot "fils", "fit", "faisant", "fier" et "femme" ...
+
+##### ... commençant par "h", "f" ou NA
+```{r}
+mots_fh <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^f", mot)] <- "f"
+  res[grep("^h", mot)] <- "h"
+  return(res)
+}
+
+mot_fils <- g_data$FILS_Mot
+res_fils_fh <- sapply(mot_fils, mots_fh)
+tab_fils_fh <- data.frame(Commence_par_fh = res_fils_fh)
+
+tab_fils_fh$partition <- as.factor(groups)
+catdes(tab_fils_fh, num.var = 2)
+
+mot_fit <- g_data$FIT_Mot
+res_fit_fh <- sapply(mot_fit, mots_fh)
+tab_fit_fh <- data.frame(Commence_par_fh = res_fit_fh)
+
+tab_fit_fh$partition <- as.factor(groups)
+catdes(tab_fit_fh, num.var = 2)
+
+mot_faisant <- g_data$FAISANT_Mot
+res_faisant_fh <- sapply(mot_faisant, mots_fh)
+tab_faisant_fh <- data.frame(Commence_par_fh = res_faisant_fh)
+
+tab_faisant_fh$partition <- as.factor(groups)
+catdes(tab_faisant_fh, num.var = 2)
+
+mot_fier <- g_data$FIER_Mot
+res_fier_fh <- sapply(mot_fier, mots_fh)
+tab_fier_fh <- data.frame(Commence_par_fh = res_fier_fh)
+
+tab_fier_fh$partition <- as.factor(groups)
+catdes(tab_fier_fh, num.var = 2)
+
+mot_femme <- g_data$FEMME_Mot
+res_femme_fh <- sapply(mot_femme, mots_fh)
+tab_femme_fh <- data.frame(Commence_par_fh = res_femme_fh)
+
+tab_femme_fh$partition <- as.factor(groups)
+catdes(tab_femme_fh, num.var = 2)
+```
+
+Les résultats des tests du chi-carré indiquent une association statistiquement significative entre les clusters et les mots commençant par différentes lettres, avec un p-value remarquablement faible de 0. Cela indique que l'association observée entre les clusters et les mots qui débutent par diverses lettres ne peut pas être attribuée au hasard.
+
+**Cluster 7**
+- Sur-représenté par les mots commençant par "f" (v-test = 27.78)
+- Sous-représenté par les mots commençant par d'autres lettres (v-test = -2.86) et par "h" (v-test = -22.57)
+
+**Cluster 7**
+- Sur-représenté par les mots commençant par d'autres lettres (v-test = 4.76)
+- Sous-représenté par les mots commençant par "f" (v-test = -6.91) et par "h" (v-test = -15.01)
+
+**Cluster 7**
+- Sur-représenté par les mots commençant par "h" (v-test = 23.05)
+- Sous-représenté par les mots commençant par "f" (v-test = -24.20)
+
+**Cluster 7**
+- Sur-représenté par les mots commençant par "h" (v-test = 18.80)
+- Sous-représenté par les mots commençant par "f" (v-test = -18.42) et par d'autres lettres (v-test = -2.04)
+
+**Cluster 7**
+- Sur-représenté par les mots commençant par "f" (v-test = 30.92)
+- Sous-représenté par les mots commençant par "h" (v-test = -30.80) et par d'autres lettres (v-test = -2.00)
+
+**Cluster 7**
+- Sur-représenté par les mots commençant par "h" (v-test = 20.59)
+- Sous-représenté par les mots commençant par "f" (v-test = -20.52)
+
+#### Mot "donnez" ...
+
+##### ... commençant par "ba", "do", "da" ou NA
+```{r}
+mots_badoda <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^ba", mot)] <- "ba"
+  res[grep("^do", mot)] <- "do"
+  res[grep("^da", mot)] <- "da"
+  return(res)
+}
+
+mot_donnez <- mots$DONNEZ_Mot
+res_donnez_badoda <- sapply(mot_donnez, mots_badoda)
+tab_donnez_badoda <- data.frame(Commence_par_badoda = res_donnez_badoda)
+
+tab_donnez_badoda$partition <- as.factor(groups)
+catdes(tab_donnez_badoda, num.var = 2)
+```
+
+Les résultats des tests du chi-carré révèlent une association statistiquement significative entre les clusters et les mots qui commencent par différentes séquences de lettres, avec une p-value négligeable de 0. 
+
+**Cluster 1 :**
+- Les mots commençant par "do" sont fortement sur-représentés, avec un v-test de 22.69
+- Les mots débutant par "ba" sont également représentés, bien que de manière moins significative
+
+**Cluster 2 :**
+- Les mots commençant par "do" sont sur-représentés, avec un v-test de 12.47
+- Les mots commençant par "ba" sont également présents, mais de manière moins significative
+- Les mots débutant par "da" sont sous-représentés dans ce cluster
+
+**Cluster 3 :**
+- Les mots commençant par "ba" sont fortement sur-représentés, avec un v-test de 23.99
+- Les mots commençant par "do" et "da" sont également présents, mais de manière moins significative
+
+**Cluster 4 :**
+- Les mots commençant par "da" sont très fortement sur-représentés, avec un v-test de 34.34
+- Les mots commençant par d'autres combinaisons littéraires et "ba" sont également présents, mais moins fréquents
+- Les mots commençant par "do" sont absents de ce cluster
+
+**Cluster 5 :**
+- Les mots commençant par "do" sont très fortement sur-représentés, avec un v-test de 32.44
+- Les mots commençant par d'autres combinaisons littéraires  sont également présents, bien que moins fréquents
+- Les mots commençant par "da" et "ba" sont moins représentés dans ce cluster
+
+**Cluster 6 :**
+- Les mots commençant par "ba" sont fortement sur-représentés, avec un v-test de 18.13
+- Les mots commençant par "do" sont également présents, mais de manière moins significative
+
+#### Mot "égales" ...
+
+##### ... finissant par "os", "es", "as" ou NA
+```{r}
+mots_osesas <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("os$", mot)] <- "os"
+  res[grep("es$", mot)] <- "es"
+  res[grep("as$", mot)] <- "as"
+  return(res)
+}
+
+mot_egales <- mots$EGALES_Mot
+res_egales_osesas <- sapply(mot_egales, mots_osesas)
+tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
+
+tab_egales_osesas$partition <- as.factor(groups)
+catdes(tab_egales_osesas, num.var = 2)
+```
+
+Les résultats des tests du chi-carré révèlent une association statistiquement significative entre les clusters et les mots qui finissent par différentes séquences de lettres, avec une p-value négligeable de 0. Nous avons la répartition suivante des clusters :
+
+**Cluster 1 :**
+- Les mots se terminant par "as" sont nettement sur-représentés, avec un v-test de 19.59
+- Les mots finissant par d'autres combinaisons littéraires sont également présents mais moins fréquents, avec un v-test de 14.26
+- Les mots se terminant par "es" et "os" sont peu fréquents dans ce cluster
+
+**Cluster 2 :**
+- Les mots se terminant par "es" sont fortement sur-représentés, avec un v-test de 25.93
+- Les mots finissant par "as" sont absents de ce cluster
+- Les mots se terminant par "os" sont également présents mais moins fréquents, avec un v-test de -22.86
+
+**Cluster 4 :**
+- Les mots se terminant par "os" sont fortement sur-représentés, avec un v-test de 28.51
+- Les mots finissant par "as" sont également présents mais moins fréquents, avec un v-test de -9.37
+- Les mots finissant par "es" sont moins représentés dans ce cluster et par d'autres combinaisons littéraires
+
+**Cluster 5 :**
+- Les mots se terminant par "as" sont sur-représentés dans ce cluster, avec un v-test de 10.70
+- Les mots finissant par "os" sont également présents mais moins fréquents, avec un v-test de 3.09
+- Les mots se terminant par "es" sont moins représentés dans ce cluster
+
+**Cluster 6:**
+- Les mots se terminant par "os" sont fortement sur-représentés, avec un v-test de 18.57
+- Les mots finissant par "autre" sont également présents mais moins fréquents, avec un v-test de 4.68
+- Les mots se terminant par "as" et "es" sont moins représentés dans ce cluster
+
+**Cluster 7 :**
+- Les mots se terminant par "es" sont fortement sur-représentés, avec un v-test de 30.92
+- Les mots finissant par d'autres combinaisons littéraires sont également présents mais moins fréquents, avec un v-test de -7.98
+- Les mots finissant par "as" sont absents de ce cluster
+- Les mots se terminant par "os" sont également présents mais moins fréquents, avec un v-test de -22.83
+
+#### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
+
+##### ... commençant par "v", "b" ou NA
+```{r}
+mots_vb <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^v", mot)] <- "v"
+  res[grep("^b", mot)] <- "b"
+  return(res)
+}
+
+mot_village <- mots$VILLAGE_Mot
+res_village_vb <- sapply(mot_village, mots_vb)
+tab_village_vb <- data.frame(Commence_par_vb = res_village_vb)
+
+tab_village_vb$partition <- as.factor(groups)
+catdes(tab_village_vb, num.var = 2)
+
+mot_ville <- mots$VILLE_Mot
+res_ville_vb <- sapply(mot_ville, mots_vb)
+tab_ville_vb <- data.frame(Commence_par_vb = res_ville_vb)
+
+tab_ville_vb$partition <- as.factor(groups)
+catdes(tab_ville_vb, num.var = 2)
+
+mot_vendre <- mots$VENDRE_Mot
+res_vendre_vb <- sapply(mot_vendre, mots_vb)
+tab_vendre_vb <- data.frame(Commence_par_vb = res_vendre_vb)
+
+tab_vendre_vb$partition <- as.factor(groups)
+catdes(tab_vendre_vb, num.var = 2)
+
+mot_vieille <- mots$VIEILLE_Mot
+res_vieille_vb <- sapply(mot_vieille, mots_vb)
+tab_vieille_vb <- data.frame(Commence_par_vb = res_vieille_vb)
+
+tab_vieille_vb$partition <- as.factor(groups)
+catdes(tab_vieille_vb, num.var = 2)
+
+mot_valet <- mots$VALET_Mot
+res_valet_vb <- sapply(mot_valet, mots_vb)
+tab_valet_vb <- data.frame(Commence_par_vb = res_valet_vb)
+
+tab_valet_vb$partition <- as.factor(groups)
+catdes(tab_valet_vb, num.var = 2)
+```
+
+Les résultats des tests du chi-carré suggèrent une forte association statistiquement significative entre les clusters et les mots qui commencent par différentes séquences de lettres, avec une p-value très proche de zéro. Cela indique que la répartition des mots dans chaque cluster est fortement influencée par la séquence initiale des lettres. Voici la répartition des clusters :
+
+**Cluster 1 :**
+- Les mots commençant par "v" sont nettement sur-représentés, avec un v-test de 38.17
+- Les mots commençant par "b" sont absents de ce cluster
+
+**Cluster 2 :**
+- Les mots commençant par "b" dominent ce cluster, avec un v-test de 10.10
+- Les mots commençant par d'autres séquences de lettres sont également présents mais moins fréquents
+
+**Cluster 4 :**
+- Les mots commençant par "b" sont fortement sur-représentés, avec un v-test de 12.07
+- Les mots commençant par d'autres combinaisons littéraires sont également présents mais moins fréquents
+- Les mots commençant par "v" sont absents de ce cluster
+
+**Cluster 5 :**
+- Les mots commençant par "b" sont fortement sur-représentés, avec un v-test de 14.26
+- Les mots commençant par d'autres combinaisons littéraires sont également présents mais moins fréquents
+- Les mots commençant par "v" sont absents de ce cluster
+
+**Cluster 6 :**
+- Les mots commençant par "v" sont sur-représentés, avec un v-test de 4.58
+- Les mots commençant par "b" sont également présents mais moins fréquents
+
+**Cluster 7 :**
+- Les mots commençant par "b" sont fortement sur-représentés, avec un v-test de 12.30
+- Les mots commençant par d'autres combinaisons littéraires sont également présents mais moins fréquents
+- Les mots commençant par "v" sont absents de ce cluster
+
+#### Mot "un" ...
+
+##### ... avec un "n" ou non (NA)
+```{r}
+mots_n <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grepl("n", mot)] <- "n"
+  return(res)
+}
+
+mot_un <- mots$UN_Mot
+res_un_n <- sapply(mot_un, mots_n)
+tab_un_n <- data.frame(Contient_un_n = res_un_n)
+
+tab_un_n$partition <- as.factor(groups)
+catdes(tab_un_n, num.var = 2)
+```
+
+Les résultats des tests du chi-carré indiquent une association statistiquement significative entre les clusters et les mots qui se finisent par "n" ou autres lettres. La p-value, très proche de zéro, suggère une corrélation forte entre ces deux variables. Cela suggère que la répartition des observations dans chaque cluster est influencée par les différentes séquences de lettres initiales. On a les répartitions observées dans chaque cluster suivantes:
+
+**Cluster 1 :**
+- Les observations contenant la lettre "n" sont fortement sur-représentées, avec un v-test de 13.73
+- Les observations contenant d'autres lettres sont moins représentées dans ce cluster
+
+**Cluster 2 :**
+- Les observations contenant la lettre "n" dominent ce cluster, avec un v-test de 18.54
+- Les observations contenant d'autres lettres sont peu représentées dans ce cluster
+
+**Cluster 4 :**
+- Les observations contenant la lettre "n" sont fortement sur-représentées, avec un v-test de 14.59
+- Les observations contenant d'autres lettres sont également présentes mais moins fréquentes
+
+**Cluster 5 :**
+- Les observations contenant la lettre "n" sont absentes de ce cluster
+- Les observations contenant d'autres lettres sont fortement sur-représentées, avec un v-test de -Inf
+
+**Cluster 6 :**
+- Les observations contenant la lettre "n" sont fortement sur-représentées, avec un v-test de 19.87
+- Les observations contenant d'autres lettres sont absentes de ce cluster
+
+**Cluster 7 :**
+- Les observations contenant la lettre "n" sont absentes de ce cluster
+- Les observations contenant d'autres lettres sont fortement sur-représentées, avec un v-test de 4.80
+
+## Sans les accents {.tabset}
+
+De manière similaire à l'analyse précédente prenant en compte les accents, nous pouvons appliquer la même approche pour les clusters formés à partir des traductions en préservant les accents, en utilisant des clusters KNN avec les valeurs de k fixées à 4, 5 et 7. Cependant, cette fois-ci, nous nous contenterons de présenter les résultats de la fonction **catdes** sans les commenter.
+
+### 4 clusters {.tabset}
+
+Matrice des distances à partir de l'ACM et de la méthode KNN avec 4 clusters sans prendre en compte les accents.
+
+```{r}
+coords_individus <- acm_with_out_act$ind$coord
+
+distance_matrix_no_act_4 <- dist(coords_individus, method = "euclidean")
+distance_matrix_no_act_4 <- as.matrix(distance_matrix_no_act_4)
+groups <- knn(coords_individus, coords_individus, clusters_no_act_4$cluster, k = 4)
+```
+
+#### Mot "homme" ...
+
+##### ... finissant par "é", "e", "i" ou NA
+```{r}
+mots_éei <- function(mot) {
+  res <- rep("autres", length(mot))
+  res[grep("é$", mot)] <- "é"
+  res[grep("e$", mot)] <- "e"
+  res[grep("i$", mot)] <- "i"
+  return(res)
+}
+
+mot_hommes<- mots$HOMME_Mot
+res_homme_éei <- sapply(mot_hommes, mots_éei)
+tab_homme_éei <- data.frame(Finit_par_éei = res_homme_éei)
+
+tab_homme_éei$partition <- as.factor(groups)
+catdes(tab_homme_éei, num.var = 2)
+```
+
+#### Mot "fils", "fit", "faisant", "fier" et "femme" ...
+
+##### ... commençant par "h", "f" ou NA
+```{r}
+mots_fh <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^f", mot)] <- "f"
+  res[grep("^h", mot)] <- "h"
+  return(res)
+}
+
+mot_fils <- g_data$FILS_Mot
+res_fils_fh <- sapply(mot_fils, mots_fh)
+tab_fils_fh <- data.frame(Commence_par_fh = res_fils_fh)
+
+tab_fils_fh$partition <- as.factor(groups)
+catdes(tab_fils_fh, num.var = 2)
+
+mot_fit <- g_data$FIT_Mot
+res_fit_fh <- sapply(mot_fit, mots_fh)
+tab_fit_fh <- data.frame(Commence_par_fh = res_fit_fh)
+
+tab_fit_fh$partition <- as.factor(groups)
+catdes(tab_fit_fh, num.var = 2)
+
+mot_faisant <- g_data$FAISANT_Mot
+res_faisant_fh <- sapply(mot_faisant, mots_fh)
+tab_faisant_fh <- data.frame(Commence_par_fh = res_faisant_fh)
+
+tab_faisant_fh$partition <- as.factor(groups)
+catdes(tab_faisant_fh, num.var = 2)
+
+mot_fier <- g_data$FIER_Mot
+res_fier_fh <- sapply(mot_fier, mots_fh)
+tab_fier_fh <- data.frame(Commence_par_fh = res_fier_fh)
+
+tab_fier_fh$partition <- as.factor(groups)
+catdes(tab_fier_fh, num.var = 2)
+
+mot_femme <- g_data$FEMME_Mot
+res_femme_fh <- sapply(mot_femme, mots_fh)
+tab_femme_fh <- data.frame(Commence_par_fh = res_femme_fh)
+
+tab_femme_fh$partition <- as.factor(groups)
+catdes(tab_femme_fh, num.var = 2)
+```
+
+#### Mot "donnez" ...
+
+###### ... commençant par "ba", "do", "da" ou NA
+```{r}
+mots_badoda <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^ba", mot)] <- "ba"
+  res[grep("^do", mot)] <- "do"
+  res[grep("^da", mot)] <- "da"
+  return(res)
+}
+
+mot_donnez <- mots$DONNEZ_Mot
+res_donnez_badoda <- sapply(mot_donnez, mots_badoda)
+tab_donnez_badoda <- data.frame(Commence_par_badoda = res_donnez_badoda)
+
+tab_donnez_badoda$partition <- as.factor(groups)
+catdes(tab_donnez_badoda, num.var = 2)
+```
+
+#### Mot "égales" ...
+
+##### ... finissant par "os", "es", "as" ou NA
+```{r}
+mots_osesas <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("os$", mot)] <- "os"
+  res[grep("es$", mot)] <- "es"
+  res[grep("as$", mot)] <- "as"
+  return(res)
+}
+
+mot_egales <- mots$EGALES_Mot
+res_egales_osesas <- sapply(mot_egales, mots_osesas)
+tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
+
+tab_egales_osesas$partition <- as.factor(groups)
+catdes(tab_egales_osesas, num.var = 2)
+```
+
+#### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
+
+##### ... commençant par "v", "b" ou NA
+```{r}
+mots_vb <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^v", mot)] <- "v"
+  res[grep("^b", mot)] <- "b"
+  return(res)
+}
+
+mot_village <- mots$VILLAGE_Mot
+res_village_vb <- sapply(mot_village, mots_vb)
+tab_village_vb <- data.frame(Commence_par_vb = res_village_vb)
+
+tab_village_vb$partition <- as.factor(groups)
+catdes(tab_village_vb, num.var = 2)
+
+mot_ville <- mots$VILLE_Mot
+res_ville_vb <- sapply(mot_ville, mots_vb)
+tab_ville_vb <- data.frame(Commence_par_vb = res_ville_vb)
+
+tab_ville_vb$partition <- as.factor(groups)
+catdes(tab_ville_vb, num.var = 2)
+
+mot_vendre <- mots$VENDRE_Mot
+res_vendre_vb <- sapply(mot_vendre, mots_vb)
+tab_vendre_vb <- data.frame(Commence_par_vb = res_vendre_vb)
+
+tab_vendre_vb$partition <- as.factor(groups)
+catdes(tab_vendre_vb, num.var = 2)
+
+mot_vieille <- mots$VIEILLE_Mot
+res_vieille_vb <- sapply(mot_vieille, mots_vb)
+tab_vieille_vb <- data.frame(Commence_par_vb = res_vieille_vb)
+
+tab_vieille_vb$partition <- as.factor(groups)
+catdes(tab_vieille_vb, num.var = 2)
+
+mot_valet <- mots$VALET_Mot
+res_valet_vb <- sapply(mot_valet, mots_vb)
+tab_valet_vb <- data.frame(Commence_par_vb = res_valet_vb)
+
+tab_valet_vb$partition <- as.factor(groups)
+catdes(tab_valet_vb, num.var = 2)
+```
+
+#### Mot "un" ...
+
+##### ... avec un "n" ou non (NA)
+```{r}
+mots_n <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grepl("n", mot)] <- "n"
+  return(res)
+}
+
+mot_un <- mots$UN_Mot
+res_un_n <- sapply(mot_un, mots_n)
+tab_un_n <- data.frame(Contient_un_n = res_un_n)
+
+tab_un_n$partition <- as.factor(groups)
+catdes(tab_un_n, num.var = 2)
+```
+
+
+### 5 clusters {.tabset}
+
+Matrice des distances à partir de l'ACM et de la méthode KNN avec 5 clusters sans prendre en compte les accents.
+
+```{r}
+coords_individus <- acm_with_out_act$ind$coord
+
+distance_matrix_no_act_5 <- dist(coords_individus, method = "euclidean")
+distance_matrix_no_act_5 <- as.matrix(distance_matrix_no_act_5)
+groups <- knn(coords_individus, coords_individus, clusters_no_act_5$cluster, k = 5)
+```
+
+#### Mot "homme" ...
+
+##### ... finissant par "é", "e", "i" ou NA
+```{r}
+mots_éei <- function(mot) {
+  res <- rep("autres", length(mot))
+  res[grep("é$", mot)] <- "é"
+  res[grep("e$", mot)] <- "e"
+  res[grep("i$", mot)] <- "i"
+  return(res)
+}
+
+mot_hommes<- mots$HOMME_Mot
+res_homme_éei <- sapply(mot_hommes, mots_éei)
+tab_homme_éei <- data.frame(Finit_par_éei = res_homme_éei)
+
+tab_homme_éei$partition <- as.factor(groups)
+catdes(tab_homme_éei, num.var = 2)
+```
+
+#### Mot "fils", "fit", "faisant", "fier" et "femme" ...
+
+##### ... commençant par "h", "f" ou NA
+```{r}
+mots_fh <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^f", mot)] <- "f"
+  res[grep("^h", mot)] <- "h"
+  return(res)
+}
+
+mot_fils <- g_data$FILS_Mot
+res_fils_fh <- sapply(mot_fils, mots_fh)
+tab_fils_fh <- data.frame(Commence_par_fh = res_fils_fh)
+
+tab_fils_fh$partition <- as.factor(groups)
+catdes(tab_fils_fh, num.var = 2)
+
+mot_fit <- g_data$FIT_Mot
+res_fit_fh <- sapply(mot_fit, mots_fh)
+tab_fit_fh <- data.frame(Commence_par_fh = res_fit_fh)
+
+tab_fit_fh$partition <- as.factor(groups)
+catdes(tab_fit_fh, num.var = 2)
+
+mot_faisant <- g_data$FAISANT_Mot
+res_faisant_fh <- sapply(mot_faisant, mots_fh)
+tab_faisant_fh <- data.frame(Commence_par_fh = res_faisant_fh)
+
+tab_faisant_fh$partition <- as.factor(groups)
+catdes(tab_faisant_fh, num.var = 2)
+
+mot_fier <- g_data$FIER_Mot
+res_fier_fh <- sapply(mot_fier, mots_fh)
+tab_fier_fh <- data.frame(Commence_par_fh = res_fier_fh)
+
+tab_fier_fh$partition <- as.factor(groups)
+catdes(tab_fier_fh, num.var = 2)
+
+mot_femme <- g_data$FEMME_Mot
+res_femme_fh <- sapply(mot_femme, mots_fh)
+tab_femme_fh <- data.frame(Commence_par_fh = res_femme_fh)
+
+tab_femme_fh$partition <- as.factor(groups)
+catdes(tab_femme_fh, num.var = 2)
+```
+
+#### Mot "donnez" ...
+
+###### ... commençant par "ba", "do", "da" ou NA
+```{r}
+mots_badoda <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^ba", mot)] <- "ba"
+  res[grep("^do", mot)] <- "do"
+  res[grep("^da", mot)] <- "da"
+  return(res)
+}
+
+mot_donnez <- mots$DONNEZ_Mot
+res_donnez_badoda <- sapply(mot_donnez, mots_badoda)
+tab_donnez_badoda <- data.frame(Commence_par_badoda = res_donnez_badoda)
+
+tab_donnez_badoda$partition <- as.factor(groups)
+catdes(tab_donnez_badoda, num.var = 2)
+```
+
+#### Mot "égales" ...
+
+##### ... finissant par "os", "es", "as" ou NA
+```{r}
+mots_osesas <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("os$", mot)] <- "os"
+  res[grep("es$", mot)] <- "es"
+  res[grep("as$", mot)] <- "as"
+  return(res)
+}
+
+mot_egales <- mots$EGALES_Mot
+res_egales_osesas <- sapply(mot_egales, mots_osesas)
+tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
+
+tab_egales_osesas$partition <- as.factor(groups)
+catdes(tab_egales_osesas, num.var = 2)
+```
+
+#### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
+
+##### ... commençant par "v", "b" ou NA
+```{r}
+mots_vb <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^v", mot)] <- "v"
+  res[grep("^b", mot)] <- "b"
+  return(res)
+}
+
+mot_village <- mots$VILLAGE_Mot
+res_village_vb <- sapply(mot_village, mots_vb)
+tab_village_vb <- data.frame(Commence_par_vb = res_village_vb)
+
+tab_village_vb$partition <- as.factor(groups)
+catdes(tab_village_vb, num.var = 2)
+
+mot_ville <- mots$VILLE_Mot
+res_ville_vb <- sapply(mot_ville, mots_vb)
+tab_ville_vb <- data.frame(Commence_par_vb = res_ville_vb)
+
+tab_ville_vb$partition <- as.factor(groups)
+catdes(tab_ville_vb, num.var = 2)
+
+mot_vendre <- mots$VENDRE_Mot
+res_vendre_vb <- sapply(mot_vendre, mots_vb)
+tab_vendre_vb <- data.frame(Commence_par_vb = res_vendre_vb)
+
+tab_vendre_vb$partition <- as.factor(groups)
+catdes(tab_vendre_vb, num.var = 2)
+
+mot_vieille <- mots$VIEILLE_Mot
+res_vieille_vb <- sapply(mot_vieille, mots_vb)
+tab_vieille_vb <- data.frame(Commence_par_vb = res_vieille_vb)
+
+tab_vieille_vb$partition <- as.factor(groups)
+catdes(tab_vieille_vb, num.var = 2)
+
+mot_valet <- mots$VALET_Mot
+res_valet_vb <- sapply(mot_valet, mots_vb)
+tab_valet_vb <- data.frame(Commence_par_vb = res_valet_vb)
+
+tab_valet_vb$partition <- as.factor(groups)
+catdes(tab_valet_vb, num.var = 2)
+```
+
+#### Mot "un" ...
+
+##### ... avec un "n" ou non (NA)
+```{r}
+mots_n <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grepl("n", mot)] <- "n"
+  return(res)
+}
+
+mot_un <- mots$UN_Mot
+res_un_n <- sapply(mot_un, mots_n)
+tab_un_n <- data.frame(Contient_un_n = res_un_n)
+
+tab_un_n$partition <- as.factor(groups)
+catdes(tab_un_n, num.var = 2)
+```
+
+### 7 clusters {.tabset}
+
+Matrice des distances à partir de l'ACM et de la méthode KNN avec 7 clusters sans prendre en compte les accents.
+
+```{r}
+coords_individus <- acm_with_out_act$ind$coord
+
+distance_matrix_no_act_7 <- dist(coords_individus, method = "euclidean")
+distance_matrix_no_act_7 <- as.matrix(distance_matrix_no_act_7)
+groups <- knn(coords_individus, coords_individus, clusters_no_act_7$cluster, k = 7)
+```
+
+#### Mot "homme" ...
+
+##### ... finissant par "é", "e", "i" ou NA
+```{r}
+mots_éei <- function(mot) {
+  res <- rep("autres", length(mot))
+  res[grep("é$", mot)] <- "é"
+  res[grep("e$", mot)] <- "e"
+  res[grep("i$", mot)] <- "i"
+  return(res)
+}
+
+mot_hommes<- mots$HOMME_Mot
+res_homme_éei <- sapply(mot_hommes, mots_éei)
+tab_homme_éei <- data.frame(Finit_par_éei = res_homme_éei)
+
+tab_homme_éei$partition <- as.factor(groups)
+catdes(tab_homme_éei, num.var = 2)
+```
+
+#### Mot "fils", "fit", "faisant", "fier" et "femme" ...
+
+##### ... commençant par "h", "f" ou NA
+```{r}
+mots_fh <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^f", mot)] <- "f"
+  res[grep("^h", mot)] <- "h"
+  return(res)
+}
+
+mot_fils <- g_data$FILS_Mot
+res_fils_fh <- sapply(mot_fils, mots_fh)
+tab_fils_fh <- data.frame(Commence_par_fh = res_fils_fh)
+
+tab_fils_fh$partition <- as.factor(groups)
+catdes(tab_fils_fh, num.var = 2)
+
+mot_fit <- g_data$FIT_Mot
+res_fit_fh <- sapply(mot_fit, mots_fh)
+tab_fit_fh <- data.frame(Commence_par_fh = res_fit_fh)
+
+tab_fit_fh$partition <- as.factor(groups)
+catdes(tab_fit_fh, num.var = 2)
+
+mot_faisant <- g_data$FAISANT_Mot
+res_faisant_fh <- sapply(mot_faisant, mots_fh)
+tab_faisant_fh <- data.frame(Commence_par_fh = res_faisant_fh)
+
+tab_faisant_fh$partition <- as.factor(groups)
+catdes(tab_faisant_fh, num.var = 2)
+
+mot_fier <- g_data$FIER_Mot
+res_fier_fh <- sapply(mot_fier, mots_fh)
+tab_fier_fh <- data.frame(Commence_par_fh = res_fier_fh)
+
+tab_fier_fh$partition <- as.factor(groups)
+catdes(tab_fier_fh, num.var = 2)
+
+mot_femme <- g_data$FEMME_Mot
+res_femme_fh <- sapply(mot_femme, mots_fh)
+tab_femme_fh <- data.frame(Commence_par_fh = res_femme_fh)
+
+tab_femme_fh$partition <- as.factor(groups)
+catdes(tab_femme_fh, num.var = 2)
+```
+
+#### Mot "donnez" ...
+
+###### ... commençant par "ba", "do", "da" ou NA
+```{r}
+mots_badoda <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^ba", mot)] <- "ba"
+  res[grep("^do", mot)] <- "do"
+  res[grep("^da", mot)] <- "da"
+  return(res)
+}
+
+mot_donnez <- mots$DONNEZ_Mot
+res_donnez_badoda <- sapply(mot_donnez, mots_badoda)
+tab_donnez_badoda <- data.frame(Commence_par_badoda = res_donnez_badoda)
+
+tab_donnez_badoda$partition <- as.factor(groups)
+catdes(tab_donnez_badoda, num.var = 2)
+```
+
+#### Mot "égales" ...
+
+##### ... finissant par "os", "es", "as" ou NA
+```{r}
+mots_osesas <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("os$", mot)] <- "os"
+  res[grep("es$", mot)] <- "es"
+  res[grep("as$", mot)] <- "as"
+  return(res)
+}
+
+mot_egales <- mots$EGALES_Mot
+res_egales_osesas <- sapply(mot_egales, mots_osesas)
+tab_egales_osesas <- data.frame(Finit_par_osesas = res_egales_osesas)
+
+tab_egales_osesas$partition <- as.factor(groups)
+catdes(tab_egales_osesas, num.var = 2)
+```
+
+#### Mot "village", "ville", "vendre", "vieille" et "valet" ... 
+
+##### ... commençant par "v", "b" ou NA
+```{r}
+mots_vb <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grep("^v", mot)] <- "v"
+  res[grep("^b", mot)] <- "b"
+  return(res)
+}
+
+mot_village <- mots$VILLAGE_Mot
+res_village_vb <- sapply(mot_village, mots_vb)
+tab_village_vb <- data.frame(Commence_par_vb = res_village_vb)
+
+tab_village_vb$partition <- as.factor(groups)
+catdes(tab_village_vb, num.var = 2)
+
+mot_ville <- mots$VILLE_Mot
+res_ville_vb <- sapply(mot_ville, mots_vb)
+tab_ville_vb <- data.frame(Commence_par_vb = res_ville_vb)
+
+tab_ville_vb$partition <- as.factor(groups)
+catdes(tab_ville_vb, num.var = 2)
+
+mot_vendre <- mots$VENDRE_Mot
+res_vendre_vb <- sapply(mot_vendre, mots_vb)
+tab_vendre_vb <- data.frame(Commence_par_vb = res_vendre_vb)
+
+tab_vendre_vb$partition <- as.factor(groups)
+catdes(tab_vendre_vb, num.var = 2)
+
+mot_vieille <- mots$VIEILLE_Mot
+res_vieille_vb <- sapply(mot_vieille, mots_vb)
+tab_vieille_vb <- data.frame(Commence_par_vb = res_vieille_vb)
+
+tab_vieille_vb$partition <- as.factor(groups)
+catdes(tab_vieille_vb, num.var = 2)
+
+mot_valet <- mots$VALET_Mot
+res_valet_vb <- sapply(mot_valet, mots_vb)
+tab_valet_vb <- data.frame(Commence_par_vb = res_valet_vb)
+
+tab_valet_vb$partition <- as.factor(groups)
+catdes(tab_valet_vb, num.var = 2)
+```
+
+#### Mot "un" ...
+
+##### ... avec un "n" ou non (NA)
+```{r}
+mots_n <- function(mot) {
+  res <- rep("autre", length(mot))
+  res[grepl("n", mot)] <- "n"
+  return(res)
+}
+
+mot_un <- mots$UN_Mot
+res_un_n <- sapply(mot_un, mots_n)
+tab_un_n <- data.frame(Contient_un_n = res_un_n)
+
+tab_un_n$partition <- as.factor(groups)
+catdes(tab_un_n, num.var = 2)
+```
+
+## Conclusion
+
+Dans cette section, nous avons exploré la relation entre les clusters formés à partir de données textuelles à l'aide de la méthode KNN et les variables catégorielles en utilisant des matrices de similarité. Ces matrices ont été créées en calculant les similarités entre les données textuelles et les variables catégorielles, ce qui nous a permis de quantifier les relations entre ces différentes entités.
+
+Nous avons constaté que la fonction **catdes** est un outil précieux pour mettre en lumière les associations entre les clusters et les variables catégorielles. Cela a grandement enrichi notre compréhension de la répartition des dialectes dans la région étudiée, en nous permettant de mieux comprendre les tendances et les structures sous-jacentes des données linguistiques.
+
+___
 
 # Classification Ascendante Hiérarchique
 
@@ -2787,4 +4306,3 @@ Nous avons pu constater que les statistiques offrent un large éventail d'applic
 De plus, nous avons rassemblé nos résultats statistiques dans une application Shiny interactive qui permet d'accéder à ces différentes analyses de manière efficace. Cette application permettrait aux linguistes de manipuler les données et de visualiser instantanément les variations étudiées dans cette enquête.
 
 Pour conclure, l'intégration des statistiques et des outils interactifs dans les sciences humaines représente une combinaison efficace. Cela nous a d'autant plus enrichi quant à l'application directe de nos années d'études statistiques sur un cas concret, ici l'étude linguistique.
-
