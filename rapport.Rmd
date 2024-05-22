@@ -1071,7 +1071,7 @@ Par la suite, nous nous sommes intéressées à la question suivante : existe-t-
 
 ___
 
-# KNN {.tabset}
+## KNN {.tabset}
 
 Nous souhaitons obtenir des clusters en utilisant la méthode KNN (Méthode des K plus proches voisins) sur l'ensemble des données disponibles. Comme les variables que nous souhaitons utiliser pour le KNN sont toutes des variables qualitatives (elles stockent différentes traductions pour chaque mot), nous devrons tout d'abord utiliser l'ACM (Analyse des Correspondances Multiples). L'ACM est une méthode statistique conçue spécifiquement pour analyser des données catégorielles ou qualitatives. Elle permet d'explorer les relations entre les modalités de différentes variables catégorielles dans un ensemble de données, et de déterminer des distances de similarité ou de dissimilarité entre les modalités. Dans notre cas, l'ACM permet d'analyser la similarité et la dissimilarité entre chaque mot disponible dans chaque colonne et d'observer si les mots se rassemblent, tout en prenant en compte toutes les variables disponibles pour chaque donnée.
 
@@ -1081,7 +1081,7 @@ Il est important de souligner que le calcul de l'ACM sur l'ensemble des données
 
 Nous allons procéder à créer des clusters à l'aide de la méthode KNN en prenant en compte les accents et en le comparant avec la partition lorsque nous ne prenons pas en compte les accents dans l'écriture de chaque mot.
 
-## Avec les accents {.tabset}
+### Avec les accents {.tabset}
 
 Nous allons créer des clusters avec la méthode KNN en prenant en compte les accès dans l’écriture des mots. Dans un première temps nous allons procéder par l'ACM. 
 
@@ -1107,7 +1107,7 @@ plot(elbow_with_act)
 
 Sur ce graphique, nous constatons que le nombre optimal de clusters est 5, 7 et 9. Nous allons nous focaliser uniquement sur les méthodes avec 5 et 7 clusters, car 9 semble être  nombre excessifs de clusters pour notre analyse. De plus, nous allons également effectuer une analyse avec 4 clusters afin de pouvoir comparer par la suite la méthode KNN avec 4 clusters à celle de CAH (Classification ascendante hiérarchique) que nous allons effectuer ultérieurement dans la partie suivante.
 
-### 4 Clusters
+#### 4 Clusters
 
 ```{r}
 k = 4
@@ -1181,7 +1181,7 @@ for (colonne in colonnes) {
 resultats
 ```
 
-### 5 Clusters
+#### 5 Clusters
 
 ```{r}
 k = 5
@@ -1259,7 +1259,7 @@ for (colonne in colonnes) {
 resultats
 ```
 
-### 7 Clusters
+#### 7 Clusters
 
 ```{r}
 k = 7
@@ -1387,7 +1387,7 @@ for (colonne in colonnes) {
 resultats
 ```
 
-## Sans les accents {.tabset}
+### Sans les accents {.tabset}
 
 Nous allons modifier tous les mots en enlevant les accents pour observer si nous retrouvons des changements importants au niveau des clusters lorsque nous ne prenons pas en compte les accent lorsque de la KNN avec à nouveau 4, 5 et 7 clusters.
 
@@ -1425,7 +1425,7 @@ plot(elbow_with_out_act)
 
 On retrouve que le nombre optimal de clusters avec la méthode KNN sur ces données est de 7 et 9. Pour la même raison que pour les données qui contiennent les accents au niveau de l'écriture, nous ne prendrons pas en compte la méthode KNN avec k = 9. Ainsi, pour bien comparer la partition KNN des données sans accents avec celles des accents, nous allons créer des répartitions avec 4 et 5 clusters.
 
-### 4 Clusters
+#### 4 Clusters
 
 ```{r}
 k = 4
@@ -1498,7 +1498,7 @@ for (colonne in colonnes) {
 resultats
 ```
 
-### 5 Clusters
+#### 5 Clusters
 
 ```{r}
 k = 5
@@ -1573,7 +1573,7 @@ for (colonne in colonnes) {
 resultats
 ```
 
-### 7 Clusters
+#### 7 Clusters
 
 ```{r}
 k = 7
@@ -1689,11 +1689,11 @@ for (colonne in colonnes) {
 resultats
 ```
 
-# Analyse des clusters
+## Conclusion
 
 Nous constatons que lorsque nous enlevons les accents, la composition des quatre clusters change de manière plus ou moins considérable. Cela suggère que la présence ou l'absence d'accents peut influencer l'organisation des clusters et donc la similarité entre les dialectes. Nous nous demanderons alors dans quelle mesure cette organisation des clusters change.
 
-### Création de matrices sur quelques mots choisis {.tabset}
+#  Analyse des clusters {.tabset}
 
 Nous cherchons à comprendre la répartition des données dans les différents clusters générés par la méthode KNN mentionnée précédemment. Pour ce faire, nous allons générer des matrices pour caractériser les mots dans notre corpus de données. Ces matrices captureront diverses propriétés linguistiques telles que l'orthographe, la terminaison et le début des mots.
 
@@ -2264,6 +2264,8 @@ tab_un_n <- data.frame(Contient_un_n = res_un_n)
 tab_un_n$partition <- as.factor(groups)
 catdes(tab_un_n, num.var = 2)
 ```
+
+## Sans les accents {.tabset}
 
 ### 4 clusters {.tabset}
 
@@ -3981,7 +3983,7 @@ Pour conclure, l'intégration des statistiques et des outils interactifs dans le
 
 ___
 
-# Biographie 
+# Bibliographie 
 
 https://www.auch-tourisme.com/loccitan-et-le-gascon/ 
 
