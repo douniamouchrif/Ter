@@ -2,16 +2,18 @@ library(shiny)
 library(leaflet)
 library(dplyr)
 library(sf)
-library(stringi)
+#library(stringi1)
 library(plotly)
 library(dendextend)
+library(rsconnect)
+library(packrat)
+library(renv)
 
 rsconnect::setAccountInfo(name='terproject',
                           token='6ECFF32A0717B46B965CBB02267D2635',
                           secret='1g+Xf75508AznBtHAo/U2h9RzVLbgjooRvjukj/3')
 
-library(rsconnect)
-rsconnect::deployApp(repo = "https://github.com/douniamouchrif/Ter.git")
+#rsconnect::deployApp(appDir = "/Users/karinaroman/Documents/GitHub/Ter", appName = "projet_TER")
 
 # Données
 mots <- read.csv("bdd_grande.csv", sep=";")
@@ -88,6 +90,24 @@ ui <- fluidPage(
                  leafletOutput("map")
                )
              )
+    ),
+    tabPanel("KNN",
+             h2("Méthode des K plus proches voisins (KNN)"),
+             p("Nous souhaitons obtenir des clusters en utilisant la méthode KNN (Méthode des K plus proches voisins) sur l'ensemble des données disponibles. Comme les variables que nous souhaitons utiliser pour le KNN sont toutes des variables qualitatives (elles stockent différentes traductions pour chaque mot), nous devrons tout d'abord utiliser l'ACM (Analyse des Correspondances Multiples). L'ACM est une méthode statistique conçue spécifiquement pour analyser des données catégorielles ou qualitatives. Elle permet d'explorer les relations entre les modalités de différentes variables catégorielles dans un ensemble de données, et de déterminer des distances de similarité ou de dissimilarité entre les modalités. Dans notre cas, l'ACM permet d'analyser la similarité et la dissimilarité entre chaque mot disponible dans chaque colonne et d'observer si les mots se rassemblent, tout en prenant en compte toutes les variables disponibles pour chaque donnée."),
+             p("Une fois que les données ont été analysées pour comprendre les relations entre les variables à l'aide de l'ACM, nous pouvons utiliser l'algorithme kNN pour effectuer la classification. L'algorithme kNN est une méthode de classification supervisée utilisée pour attribuer une classe à un nouvel échantillon en se basant sur les classes des échantillons voisins dans l'espace des caractéristiques et donc sur les distances entre chaque donnée obtenue grâce à l'ACM."),
+             p("Nous allons procéder à créer des clusters à l'aide de la méthode KNN en prenant en compte les accents et en le comparant avec la partition lorsque nous ne prenons pas en compte les accents dans l'écriture de chaque mot."),
+             p("Il est important de souligner que le calcul de l'ACM sur l'ensemble des données est assez long, que ce soit avec les données prenant en compte les accents ou non. Par conséquent, nous avons préalablement stocké les données issues de chaque ACM dans deux fichiers .Rdata : acm_with_act.Rdata et acm_with_out_act.Rdata pour les traductions avec et respectivement sans la prise en compte des accents. Ces fichiers sont directement utilisés pour calculer les clusters KNN en fonction de chaque k choisi."),
+             sidebarPanel(
+               selectInput("accents_knn", "Accents",
+                           choices = c("Avec" = "Avec", "Sans" = "Sans")),
+               sliderInput("k_value_knn", "Nombre de clusters :", value = 4, min = 2, max = 10, step = 1)
+             ),
+             mainPanel(
+               plotOutput("plotline_knn")
+             ),
+             leafletOutput("map_knn"),
+             h2("Analyse des clusters"),
+             p("Nos observations révèlent une modification significative dans la composition des clusters lorsque les accents sont pas pris en compte, et ce, pour toutes les valeurs de k (ne mobre de custers). Cette constatation suggère que la présence ou l'absence d'accents peut avoir une influence substantielle sur l'organisation des clusters et, par extension, sur la similarité entre les dialectes étudiés. Cette variation soulève la question de l'ampleur du changement dans l'organisation des clusters et son impact sur la représentation des données linguistiques."),
     ),
     
     tabPanel("CAH",
@@ -454,6 +474,54 @@ server <- function(input, output) {
               <p>Pour conclure, nous avons constaté que pour chacun des mots qui partagent aujourd'hui la même première lettre “v”, leur répartition selon la première lettre de leur consonne en attaque est également homogène. En effet, la lettre “v” était prédominante dans le nord de la région, tandis que la lettre “b” était plus fréquemment utilisée dans le sud. Cette constatation met en lumière une cohérence avec les pratiques orthographiques actuelles.</p>")
         }
   })
+  
+  if (!file.exists("acm_with_act.RData")) {
+    acm_with_act <- MCA(variables_qualitatives, graph = FALSE)
+    save(acm_with_act, file = "acm_with_act.RData")
+  } else {
+    load("acm_with_act.RData")
+  }
+  
+  if (!file.exists("acm_with_out_act.RData")) {
+    acm_with_out_act <- MCA(variables_qualitatives, graph = FALSE)
+    save(acm_with_out_act, file = "acm_with_out_act.RData")
+  } else {
+    load("acm_with_out_act.RData")
+  }
+  
+  map_knn <- function(acm_data, k_value) {
+    clusters_act <- kmeans(acm_data$ind$coord, centers = k_value)
+    mots$cluster <- clusters_act$cluster
+    
+    clusters_uniques_triés <- sort(unique(mots$cluster))
+    
+    palette_couleurs <- function(cluster) {
+      couleurs <- c("#F15025", "#F1D725", "#682E0B", "#75b8d1", "#8FD175", "#d1ab75", "#2d543d", "#B276B2", "#BBBBBB", "green")[1:length(clusters_uniques_triés)]
+      return(couleurs[cluster])
+    }
+    
+    leaflet() %>%
+      addProviderTiles("CartoDB.Positron") %>%
+      addCircleMarkers(data = mots, ~x, ~y, color = ~palette_couleurs(cluster), 
+                       radius = 2, opacity = 1, popup = paste("Commune:", mots$commune, "<br/>",
+                                                              "Canton:", mots$canton, "<br/>",
+                                                              "Département:", mots$département, "<br/>",
+                                                              "Cluster:", mots$cluster)) %>%
+      addLegend(position = "bottomright", colors = palette_couleurs(clusters_uniques_triés),
+                labels = as.character(clusters_uniques_triés), title = "Cluster") %>%
+      addPolygons(data = departements, color = "black", fill = FALSE, weight = 1, opacity = 1) %>%
+      addPolylines(data = rivers_lines, color = "blue", weight = 2, opacity = 1)
+  }
+  
+  output$plotline_knn <- renderPlot({
+    if (input$accents_knn == "Avec") {
+      map_knn(acm_with_act, input$k_value_knn)
+    } else if (input$accents_knn == "Sans") {
+      map_knn(acm_with_out_act, input$k_value_knn)
+    }
+  })
+  
+  
   
   clusters <- reactive({
     df_all <- mots

@@ -1069,6 +1069,8 @@ Nous souhaitons obtenir des clusters en utilisant la méthode KNN (Méthode des 
 
 Une fois que les données ont été analysées pour comprendre les relations entre les variables à l'aide de l'ACM, nous pouvons utiliser l'algorithme kNN pour effectuer la classification. L'algorithme kNN est une méthode de classification supervisée utilisée pour attribuer une classe à un nouvel échantillon en se basant sur les classes des échantillons voisins dans l'espace des caractéristiques et donc sur les distances entre chaque donnée obtenue grâce à l'ACM.
 
+Il est important de souligner que le calcul de l'ACM sur l'ensemble des données est assez long, que ce soit avec les données prenant en compte les accents ou non. Par conséquent, nous avons préalablement stocké les données issues de chaque ACM dans deux fichiers .Rdata : acm_with_act.Rdata et acm_with_out_act.Rdata pour les traductions avec et respectivement sans la prise en compte des accents. Ces fichiers sont directement utilisés pour calculer les clusters KNN en fonction de chaque k choisi.
+
 Nous allons procéder à créer des clusters à l'aide de la méthode KNN en prenant en compte les accents et en le comparant avec la partition lorsque nous ne prenons pas en compte les accents dans l'écriture de chaque mot.
 
 ## Avec les accents {.tabset}

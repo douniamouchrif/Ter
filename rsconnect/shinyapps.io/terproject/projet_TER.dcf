@@ -1,0 +1,10 @@
+name: projet_TER
+title:
+username: terproject
+account: terproject
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12050348
+bundleId: 8647048
+url: https://terproject.shinyapps.io/projet_TER/
+version: 1
